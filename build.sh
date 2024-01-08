@@ -5,4 +5,4 @@ if [ ! -f BUSE/libbuse.a ]; then
 fi
 
 
-g++ main.cpp src/smart_array_raid_5_reader.cpp -o main -LBUSE -lbuse -O3
+g++ main.cpp src/*.cpp -o main -LBUSE -lbuse -Iinclude -O3 -std=c++20

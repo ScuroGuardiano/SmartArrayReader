@@ -3,9 +3,9 @@
 #include <memory.h>
 #include <memory>
 #include <iostream>
-#include "include/smart_array_raid_5_reader.hpp"
+#include "smart_array_raid_5_reader.hpp"
 
-std::unique_ptr<SmartArrayRaid5Reader> reader;
+std::unique_ptr<DriveReader> reader;
 
 int read(void *buf, u_int32_t len, u_int64_t offset, void *userdata)
 {
@@ -17,14 +17,19 @@ int main(int argc, char** argv)
     SmartArrayRaid5ReaderOptions readerOpts = {
         .stripeSize = 256,
         .parityDelay = 16,
-        .drives = { "/dev/sdb", "/dev/sdc", "/dev/sdd" }
+        .driveReaders = {
+            std::make_shared<BlockDeviceReader>("/dev/sde"),
+            std::make_shared<BlockDeviceReader>("/dev/sdb"),
+            std::make_shared<BlockDeviceReader>("/dev/sdc"),
+            nullptr
+        }
     };
 
     reader = std::make_unique<SmartArrayRaid5Reader>(readerOpts);
 
     buse_operations ops = {
         .read = read,
-        .size = reader->totalArraySize(),
+        .size = reader->driveSize(),
         .blksize = 512
     };
 
