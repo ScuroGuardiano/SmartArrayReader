@@ -40,4 +40,5 @@ private:
     u_int64_t stripeDriveOffset(u_int64_t stripenum, u_int32_t stripeRelativeOffset);
     u_int32_t readFromStripe(void* buf, u_int64_t stripenum, u_int32_t stripeRelativeOffset, u_int32_t len);
     u_int32_t recoverForDrive(void* buf, u_int16_t drivenum, u_int64_t driveOffset, u_int32_t len);
+    void throwIfDriveError(std::ifstream& drive, u_int16_t drivenum);
 };

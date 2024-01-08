@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <algorithm>
+#include <memory>
 
 SmartArrayRaid5Reader::SmartArrayRaid5Reader(SmartArrayRaid5ReaderOptions &options)
 {
@@ -25,7 +26,6 @@ SmartArrayRaid5Reader::SmartArrayRaid5Reader(SmartArrayRaid5ReaderOptions &optio
     {
         if (drive.empty())
         {
-            throw std::runtime_error("read with missing drive is currently not implemeted.");
             if (missingDrives > 0)
             {
                 throw std::invalid_argument("For RAID 5 only 1 missing drive is allowed.");
@@ -67,10 +67,12 @@ int SmartArrayRaid5Reader::read(void *buf, u_int32_t len, u_int64_t offset)
         return 0;
     }
 
+    #ifdef LOGGING_ENABLED
     std::cout << "------- READ -------" << std::endl;
     std::cout << "Len:        " << len << std::endl;
     std::cout << "Offset:     " << offset << std::endl;
     std::cout << "Total size: " << this->totalArraySize() << std::endl;
+    #endif
 
     u_int64_t stripenum = this->stripeNumber(offset);
     u_int32_t stripeRelativeOffset = this->stripeRelativeOffset(stripenum, offset);
@@ -163,12 +165,14 @@ u_int32_t SmartArrayRaid5Reader::readFromStripe(void *buf, u_int64_t stripenum, 
     auto drivenum = stripeDriveNumber(stripenum);
     auto driveOffset = stripeDriveOffset(stripenum, stripeRelativeOffset);
 
+    #ifdef LOGGING_ENABLED
     std::cout << "------ STRIPE ------" << std::endl;
     std::cout << "Stripe num: " << stripenum << std::endl;
     std::cout << "Stripe off: " << stripeRelativeOffset << std::endl;
     std::cout << "Drive num:  " << drivenum << std::endl;
     std::cout << "Drive off:  " << driveOffset << std::endl;
     std::cout << "Len:        " << len << std::endl;
+    #endif
 
     if ((len + stripeRelativeOffset) > this->stripeSizeInBytes)
     {
@@ -190,11 +194,62 @@ u_int32_t SmartArrayRaid5Reader::readFromStripe(void *buf, u_int64_t stripenum, 
     driveHandle.seekg(driveOffset);
     driveHandle.read((char*)buf, len);
     
-    if (driveHandle.fail())
+    this->throwIfDriveError(driveHandle, drivenum);
+
+    return len;
+}
+
+u_int32_t SmartArrayRaid5Reader::recoverForDrive(void *buf, u_int16_t drivenum, u_int64_t driveOffset, u_int32_t len)
+{
+    std::vector<std::ifstream*> otherDrives;
+    for (int i = 0; i < this->drives.size(); i++)
+    {
+        if (i != drivenum)
+        {
+            // if drivenum is missing drive other drives should always be defined
+            otherDrives.push_back(&this->drives[i].value());
+        }
+    }
+
+    std::unique_ptr<char[]> _uniq_out(new char[len]);
+    std::unique_ptr<char[]> _uniq_temp(new char[len]);
+
+    // I am getting raw pointers coz for array operations
+    // compiler will use SSE for them with -O3
+    // with unique pointer that is not the case
+    // https://godbolt.org/z/aTYrhqPGb
+    // I am using unique here only to delete it automatically ^^
+    char* out = _uniq_out.get();
+    char* temp = _uniq_temp.get();
+
+    memset(out, 0, len);
+    
+    // TODO: For god sake, make it multithreaded please.
+    for (int i = 0; i < otherDrives.size(); i++)
+    {
+        auto drive = otherDrives[i];
+        drive->seekg(driveOffset);
+        drive->read(temp, len);
+        this->throwIfDriveError(*drive, 1000 + i);
+
+        for (int i = 0; i < len; i++)
+        {
+            // Compiler with flag -O3 should optimize it using sse ^^
+            out[i] ^= temp[i];
+        }
+    }
+
+    memcpy(buf, out, len);
+    return len;
+}
+
+void SmartArrayRaid5Reader::throwIfDriveError(std::ifstream &drive, u_int16_t drivenum)
+{
+    if (drive.fail())
     {
         std::stringstream errMsg;
-        errMsg << "Reading from drive has failed. ";
-        if (driveHandle.eof()) {
+        errMsg << "Reading from drive " << drivenum << " has failed. ";
+        if (drive.eof()) {
             errMsg << "Reason: end of file.";
         }
         else {
@@ -203,12 +258,4 @@ u_int32_t SmartArrayRaid5Reader::readFromStripe(void *buf, u_int64_t stripenum, 
 
         throw std::runtime_error(errMsg.str());
     }
-
-    return len;
-}
-
-u_int32_t SmartArrayRaid5Reader::recoverForDrive(void *buf, u_int16_t drivenum, u_int64_t driveOffset, u_int32_t len)
-{
-    throw std::runtime_error("Recovery from parity is not implemented yet");
-    return u_int32_t();
 }
