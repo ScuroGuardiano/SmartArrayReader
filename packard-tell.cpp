@@ -31,7 +31,7 @@ int main(int argc, char** argv)
         std::cout << "Just give me the drives and I will tell you their order in the array!" << std::endl;
         std::cout << "Provide at least 2 drives, logical, right?" << std::endl << std::endl;
         std::cout << "Usage:" << std::endl;
-        std::cout << "\tpackard-tell /drive1 /drive2 .../driveN" << std::endl;
+        std::cout << "\tpackard-tell drive1 drive2 ...driveN" << std::endl;
         std::cout << "Example:" << std::endl;
         std::cout << "\tpackard-tell /dev/sda /dev/sdb /dev/sdc /dev/sdd" << std::endl << std::endl;
         return 0;
