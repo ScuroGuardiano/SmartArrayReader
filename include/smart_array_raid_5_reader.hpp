@@ -1,9 +1,7 @@
 #pragma once
 
 #include <sys/types.h>
-#include <fstream>
 #include <vector>
-#include <optional>
 #include <memory>
 #include "drive_reader.hpp"
 
@@ -32,7 +30,7 @@ private:
     // Smallest drive in the array
     u_int64_t singleDriveSize;
     std::vector<std::shared_ptr<DriveReader>> drives;
-    
+
     // Stripes will be index from 0.
     u_int64_t stripeNumber(u_int64_t offset);
     u_int64_t stripeEndOffset(u_int64_t stripenum);

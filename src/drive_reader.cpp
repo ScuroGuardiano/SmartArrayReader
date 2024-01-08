@@ -61,6 +61,17 @@ u_int64_t BlockDeviceReader::driveSize()
 u_int64_t BlockDeviceReader::readDriveSize(std::string path)
 {
     int fd = open(path.c_str(), O_RDONLY);
+
+    if (fd == -1)
+    {
+        std::stringstream errMsgStream;
+        errMsgStream << "Could not read size of drive "
+            << path << "; Reason: "
+            << strerror(errno);
+
+        throw std::runtime_error(errMsgStream.str());
+    }
+
     size_t driveSize = 0;
     int rc = ioctl(fd, BLKGETSIZE64, &driveSize);
     close(fd);
@@ -68,8 +79,8 @@ u_int64_t BlockDeviceReader::readDriveSize(std::string path)
     if (rc != 0)
     {
         std::stringstream errMsgStream;
-        errMsgStream << "Could not open read size of drive "
-            << path << " Reason: "
+        errMsgStream << "Could not read size of drive "
+            << path << "; Reason: "
             << strerror(errno);
 
         throw std::runtime_error(errMsgStream.str());

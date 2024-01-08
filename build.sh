@@ -4,5 +4,5 @@ if [ ! -f BUSE/libbuse.a ]; then
     cd ..
 fi
 
-
-g++ main.cpp src/*.cpp -o main -LBUSE -lbuse -Iinclude -O3 -std=c++20
+g++ hewlett-fuck.cpp src/*.cpp -o hewlett-fuck -LBUSE -lbuse -Iinclude -O3 -std=c++20
+g++ packard-tell.cpp src/drive_reader.cpp -o packard-tell -Iinclude -O3 -std=c++20
