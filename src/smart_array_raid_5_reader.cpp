@@ -99,8 +99,8 @@ u_int64_t SmartArrayRaid5Reader::totalArraySize()
     // I don't know how Smart Array hanle that, does it use it or skip it?
     // For simplicity sake I will skip it for now
     // TODO: Check if last, not whole stripe is used. If it used, add code to read from it.
-    int wholeStripeOnDrive = this->singleDriveSize / this->stripeSizeInBytes;
-    return wholeStripeOnDrive * this->stripeSizeInBytes * (drives.size() - 1);
+    u_int64_t wholeStripesOnDrive = this->singleDriveSize / this->stripeSizeInBytes;
+    return wholeStripesOnDrive * this->stripeSizeInBytes * (drives.size() - 1);
 }
 
 u_int64_t SmartArrayRaid5Reader::readDriveSize(std::string path)
@@ -125,7 +125,7 @@ u_int64_t SmartArrayRaid5Reader::readDriveSize(std::string path)
 
 u_int64_t SmartArrayRaid5Reader::stripeNumber(u_int64_t offset)
 {
-    return offset / (double)this->stripeSizeInBytes;
+    return offset / this->stripeSizeInBytes;
 }
 
 u_int64_t SmartArrayRaid5Reader::stripeEndOffset(u_int64_t stripenum)
@@ -145,7 +145,7 @@ u_int16_t SmartArrayRaid5Reader::stripeDriveNumber(u_int64_t stripenum)
     u_int16_t parityDrive = drives.size() - (delayRowOffset / this->parityDelay) - 1;
     u_int16_t stripeDrive = stripenum % (drives.size() - 1);
 
-    if (stripeDrive == parityDrive)
+    if ((stripeDrive - parityDrive) >= 0)
     {
         stripeDrive++;
     }

@@ -17,14 +17,15 @@ int main(int argc, char** argv)
     SmartArrayRaid5ReaderOptions readerOpts = {
         .stripeSize = 256,
         .parityDelay = 16,
-        .drives = { "/dev/sdb", "", "/dev/sdd" }
+        .drives = { "/dev/sdb", "/dev/sdc", "/dev/sdd" }
     };
 
     reader = std::make_unique<SmartArrayRaid5Reader>(readerOpts);
 
     buse_operations ops = {
         .read = read,
-        .size = reader->totalArraySize()
+        .size = reader->totalArraySize(),
+        .blksize = 512
     };
 
     buse_main("/dev/nbd1", &ops, NULL);
