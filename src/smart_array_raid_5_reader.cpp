@@ -1,15 +1,26 @@
-#include "smart_array_raid_5_reader.hpp"
+#include "../include/smart_array_raid_5_reader.hpp"
 #include <math.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <linux/fs.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
 #include <iostream>
 #include <stdexcept>
 #include <sstream>
+#include <algorithm>
 
 SmartArrayRaid5Reader::SmartArrayRaid5Reader(SmartArrayRaid5ReaderOptions &options)
 {
-    this->parityDelay = parityDelay;
+    this->parityDelay = options.parityDelay;
     this->stripeSizeInBytes = options.stripeSize * 1024;
     
     int missingDrives = 0;
+    std::vector<u_int64_t> drivesSizes;
+
     for (auto drive : options.drives)
     {
         if (drive.empty())
@@ -21,8 +32,15 @@ SmartArrayRaid5Reader::SmartArrayRaid5Reader(SmartArrayRaid5ReaderOptions &optio
             }
             missingDrives++;
             this->drives.push_back(std::nullopt);
+            continue;
         }
 
+        drivesSizes.push_back(this->readDriveSize(drive));
+
+        // Yeah, I use linux syscalls to read drive sizes and here
+        // I use ifstream, I could use just syscalls
+        // But they're scary and I am too lazy to read how to process errors
+        // from them. So I'll stick with ifstream, at least for now.
         std::ifstream driveHandle(drive, std::ios::binary);
 
         if (!driveHandle.is_open())
@@ -30,23 +48,77 @@ SmartArrayRaid5Reader::SmartArrayRaid5Reader(SmartArrayRaid5ReaderOptions &optio
             std::stringstream errMsgStream;
             errMsgStream << "Could not open drive "
                 << drive << " Reason: "
-                << errno;
+                << strerror(errno);
 
             throw std::runtime_error(errMsgStream.str());
         }
 
         this->drives.push_back(std::optional(std::move(driveHandle)));
     }
+
+    this->singleDriveSize = *std::min_element(drivesSizes.begin(), drivesSizes.end());
 }
 
 int SmartArrayRaid5Reader::read(void *buf, u_int32_t len, u_int64_t offset)
 {
+    if (offset >= this->totalArraySize())
+    {
+        std::cerr << "Tried to read from offset exceeding array size. Skipping." << std::endl;
+        return 0;
+    }
+
+    std::cout << "------- READ -------" << std::endl;
+    std::cout << "Len:        " << len << std::endl;
+    std::cout << "Offset:     " << offset << std::endl;
+    std::cout << "Total size: " << this->totalArraySize() << std::endl;
+
+    u_int64_t stripenum = this->stripeNumber(offset);
+    u_int32_t stripeRelativeOffset = this->stripeRelativeOffset(stripenum, offset);
+
+    while (len != 0)
+    {
+        u_int32_t read = this->readFromStripe(buf, stripenum, stripeRelativeOffset, len);
+        len -= read;
+        buf = static_cast<char*>(buf) + read;
+
+        if (len > 0)
+        {
+            stripenum++;
+            stripeRelativeOffset = 0;
+        }
+    }
+
     return 0;
 }
 
 u_int64_t SmartArrayRaid5Reader::totalArraySize()
 {
-    return this->singleDriveSize * (drives.size() - 1);
+    // I am skipping last stripe on drive if it's not whole
+    // I don't know how Smart Array hanle that, does it use it or skip it?
+    // For simplicity sake I will skip it for now
+    // TODO: Check if last, not whole stripe is used. If it used, add code to read from it.
+    int wholeStripeOnDrive = this->singleDriveSize / this->stripeSizeInBytes;
+    return wholeStripeOnDrive * this->stripeSizeInBytes * (drives.size() - 1);
+}
+
+u_int64_t SmartArrayRaid5Reader::readDriveSize(std::string path)
+{
+    int fd = open(path.c_str(), O_RDONLY);
+    size_t driveSize = 0;
+    int rc = ioctl(fd, BLKGETSIZE64, &driveSize);
+    close(fd);
+
+    if (rc != 0)
+    {
+        std::stringstream errMsgStream;
+        errMsgStream << "Could not open read size of drive "
+            << path << " Reason: "
+            << strerror(errno);
+
+        throw std::runtime_error(errMsgStream.str());
+    }
+
+    return driveSize;
 }
 
 u_int64_t SmartArrayRaid5Reader::stripeNumber(u_int64_t offset)
@@ -71,7 +143,7 @@ u_int16_t SmartArrayRaid5Reader::stripeDriveNumber(u_int64_t stripenum)
     u_int16_t parityDrive = drives.size() - (delayRowOffset / this->parityDelay) - 1;
     u_int16_t stripeDrive = stripenum % (drives.size() - 1);
 
-    if (stripeDrive == parityDelay)
+    if (stripeDrive == parityDrive)
     {
         stripeDrive++;
     }
@@ -90,14 +162,21 @@ u_int32_t SmartArrayRaid5Reader::readFromStripe(void *buf, u_int64_t stripenum, 
 {
     auto drivenum = stripeDriveNumber(stripenum);
     auto driveOffset = stripeDriveOffset(stripenum, stripeRelativeOffset);
-    
+
+    std::cout << "------ STRIPE ------" << std::endl;
+    std::cout << "Stripe num: " << stripenum << std::endl;
+    std::cout << "Stripe off: " << stripeRelativeOffset << std::endl;
+    std::cout << "Drive num:  " << drivenum << std::endl;
+    std::cout << "Drive off:  " << driveOffset << std::endl;
+    std::cout << "Len:        " << len << std::endl;
+
     if ((len + stripeRelativeOffset) > this->stripeSizeInBytes)
     {
-        std::stringstream errMsg;
-        errMsg << "Exceeded stripe data area, "
-            << "stripeRelativeOffset = " << stripeRelativeOffset << ";"
-            << "len = " << len;
-        throw std::out_of_range(errMsg.str());
+        // We will to the end of the stripe if
+        // stripe area is exceed. We will return len
+        // from this method so called will know that
+        // some data must be read from another stripe
+        len = this->stripeSizeInBytes - stripeRelativeOffset;
     }
 
     auto& driveHandleOpt = this->drives[drivenum];
@@ -108,6 +187,7 @@ u_int32_t SmartArrayRaid5Reader::readFromStripe(void *buf, u_int64_t stripenum, 
     }
 
     auto& driveHandle = driveHandleOpt.value();
+    driveHandle.seekg(driveOffset);
     driveHandle.read((char*)buf, len);
     
     if (driveHandle.fail())
@@ -118,13 +198,13 @@ u_int32_t SmartArrayRaid5Reader::readFromStripe(void *buf, u_int64_t stripenum, 
             errMsg << "Reason: end of file.";
         }
         else {
-            errMsg << "Reason: unknown, errno: " << errno;
+            errMsg << "Reason: unknown, errno: " << strerror(errno);
         }
 
-        throw std::out_of_range(errMsg.str());
+        throw std::runtime_error(errMsg.str());
     }
 
-    return 0;
+    return len;
 }
 
 u_int32_t SmartArrayRaid5Reader::recoverForDrive(void *buf, u_int16_t drivenum, u_int64_t driveOffset, u_int32_t len)

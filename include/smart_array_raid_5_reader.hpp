@@ -21,6 +21,7 @@ class SmartArrayRaid5Reader
 public:
     SmartArrayRaid5Reader(SmartArrayRaid5ReaderOptions& options);
     int read(void *buf, u_int32_t len, u_int64_t offset);
+    u_int64_t totalArraySize();
 
 private:
     u_int32_t stripeSizeInBytes;
@@ -30,7 +31,7 @@ private:
     u_int64_t singleDriveSize;
     std::vector<std::optional<std::ifstream>> drives;
 
-    u_int64_t totalArraySize();
+    u_int64_t readDriveSize(std::string path);
     // Stripes will be index from 0.
     u_int64_t stripeNumber(u_int64_t offset);
     u_int64_t stripeEndOffset(u_int64_t stripenum);
