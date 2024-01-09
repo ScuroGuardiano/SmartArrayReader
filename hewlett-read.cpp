@@ -5,8 +5,10 @@
 #include <memory>
 #include <iostream>
 #include <exception>
-#include "smart_array_raid_5_reader.hpp"
 #include <limits.h>
+#include "smart_array_raid_0_reader.hpp"
+#include "smart_array_raid_5_reader.hpp"
+#include "smart_array_raid_1_reader.hpp"
 
 std::unique_ptr<DriveReader> reader;
 
@@ -119,6 +121,43 @@ error_t parseOpt(int key, char *arg, argp_state *state)
     return 0;
 }
 
+void drivesPathVectorToDeviceReaderVector(
+    std::vector<std::string>& paths,
+    std::vector<std::shared_ptr<DriveReader>>& out)
+{
+    for (auto& path : paths)
+    {
+        if (!path.empty())
+        {
+            out.push_back(std::make_shared<BlockDeviceReader>(path));
+        }
+        else
+        {
+            // Reader should handle this
+            out.push_back(nullptr);
+        }
+    }
+}
+
+void initForRaid0(ProgramOptions &opts)
+{
+    SmartArrayRaid0ReaderOptions readerOpts = {
+        .stripeSize = opts.stripeSize
+    };
+
+    drivesPathVectorToDeviceReaderVector(opts.drives, readerOpts.driveReaders);
+    
+    reader = std::make_unique<SmartArrayRaid0Reader>(readerOpts);
+}
+
+
+void initForRaid1(ProgramOptions &opts)
+{
+    SmartArrayRaid1ReaderOptions readerOpts;
+    drivesPathVectorToDeviceReaderVector(opts.drives, readerOpts.driveReaders);
+    reader = std::make_unique<SmartArrayRaid1Reader>(readerOpts);
+}
+
 void initForRaid5(ProgramOptions &opts)
 {
     SmartArrayRaid5ReaderOptions readerOpts = {
@@ -126,17 +165,7 @@ void initForRaid5(ProgramOptions &opts)
         .parityDelay = opts.parityDelay
     };
 
-    for (auto& drive : opts.drives)
-    {
-        if (!drive.empty())
-        {
-            readerOpts.driveReaders.push_back(std::make_shared<BlockDeviceReader>(drive));
-        }
-        else
-        {
-            readerOpts.driveReaders.push_back(nullptr);
-        }
-    }
+    drivesPathVectorToDeviceReaderVector(opts.drives, readerOpts.driveReaders);
 
     reader = std::make_unique<SmartArrayRaid5Reader>(readerOpts);
 }
@@ -176,11 +205,11 @@ int main(int argc, char** argv)
     switch (opts.raidLevel)
     {
         case 0:
-            std::cerr << "RAID 0 is not implemented yet." << std::endl;
-            return -1;
+            initForRaid0(opts);
+            break;
         case 1:
-            std::cerr << "RAID 1 is not implemented yet and probably won't be. You can read it directly." << std::endl;
-            return -1;
+            initForRaid1(opts);
+            break;
         case 5:
             initForRaid5(opts);
             break;

@@ -9,10 +9,15 @@
 #include <errno.h>
 #include <string.h>
 
+std::string DriveReader::name()
+{
+    return this->driveName;
+}
+
 BlockDeviceReader::BlockDeviceReader(std::string path)
 {
     this->size = this->readDriveSize(path);
-    this->path = path;
+    this->driveName = path;
 
     // Yeah, I use linux syscalls to read drive sizes and here
     // I use ifstream, I could use just syscalls
@@ -39,7 +44,7 @@ int BlockDeviceReader::read(void *buf, u_int32_t len, u_int64_t offset)
     if (this->devstream.fail())
     {
         std::stringstream errMsg;
-        errMsg << "Reading from drive " << this->path << " has failed. ";
+        errMsg << "Reading from drive " << this->name() << " has failed. ";
         if (this->devstream.eof()) {
             errMsg << "Reason: end of file.";
         }

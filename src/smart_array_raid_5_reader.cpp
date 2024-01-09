@@ -9,6 +9,7 @@
 
 SmartArrayRaid5Reader::SmartArrayRaid5Reader(SmartArrayRaid5ReaderOptions &options)
 {
+    this->driveName = options.readerName;
     this->parityDelay = options.parityDelay;
     this->stripeSizeInBytes = options.stripeSize * 1024;
     
@@ -46,7 +47,7 @@ int SmartArrayRaid5Reader::read(void *buf, u_int32_t len, u_int64_t offset)
     if (offset >= this->driveSize())
     {
         std::cerr << "Tried to read from offset exceeding array size. Skipping." << std::endl;
-        return 0;
+        return -1;
     }
 
     #ifdef LOGGING_ENABLED
@@ -88,11 +89,6 @@ u_int64_t SmartArrayRaid5Reader::driveSize()
 u_int64_t SmartArrayRaid5Reader::stripeNumber(u_int64_t offset)
 {
     return offset / this->stripeSizeInBytes;
-}
-
-u_int64_t SmartArrayRaid5Reader::stripeEndOffset(u_int64_t stripenum)
-{
-    return stripenum * this->stripeSizeInBytes - 1;
 }
 
 u_int32_t SmartArrayRaid5Reader::stripeRelativeOffset(u_int64_t stripenumber, u_int64_t offset)

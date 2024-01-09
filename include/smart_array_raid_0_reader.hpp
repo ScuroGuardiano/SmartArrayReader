@@ -5,22 +5,20 @@
 #include <memory>
 #include "drive_reader.hpp"
 
-struct SmartArrayRaid5ReaderOptions
+struct SmartArrayRaid0ReaderOptions
 {
-
     /// @brief stripe size in kilobytes.
     u_int32_t stripeSize;
-    u_int16_t parityDelay;
 
     /// @brief drives path
     std::vector<std::shared_ptr<DriveReader>> driveReaders;
     std::string readerName;
 };
 
-class SmartArrayRaid5Reader : public DriveReader
+class SmartArrayRaid0Reader : public DriveReader
 {
 public:
-    SmartArrayRaid5Reader(SmartArrayRaid5ReaderOptions& options);
+    SmartArrayRaid0Reader(SmartArrayRaid0ReaderOptions& options);
     int read(void *buf, u_int32_t len, u_int64_t offset) override;
     u_int64_t driveSize() override;
 
@@ -38,5 +36,4 @@ private:
     u_int16_t stripeDriveNumber(u_int64_t stripenum);
     u_int64_t stripeDriveOffset(u_int64_t stripenum, u_int32_t stripeRelativeOffset);
     u_int32_t readFromStripe(void* buf, u_int64_t stripenum, u_int32_t stripeRelativeOffset, u_int32_t len);
-    u_int32_t recoverForDrive(void* buf, u_int16_t drivenum, u_int64_t driveOffset, u_int32_t len);
 };

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <sys/types.h>
 #include <string>
 #include <fstream>
@@ -8,6 +10,10 @@ public:
     virtual int read(void* buf, u_int32_t len, u_int64_t offset) = 0;
     virtual u_int64_t driveSize() = 0;
     virtual inline ~DriveReader() {};
+    virtual std::string name();
+
+protected:
+    std::string driveName;
 };
 
 class BlockDeviceReader : public DriveReader
