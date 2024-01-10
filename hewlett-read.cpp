@@ -7,8 +7,9 @@
 #include <exception>
 #include <limits.h>
 #include "smart_array_raid_0_reader.hpp"
-#include "smart_array_raid_5_reader.hpp"
 #include "smart_array_raid_1_reader.hpp"
+#include "smart_array_raid_5_reader.hpp"
+#include "smart_array_raid_6_reader.hpp"
 
 std::unique_ptr<DriveReader> reader;
 
@@ -170,6 +171,18 @@ void initForRaid5(ProgramOptions &opts)
     reader = std::make_unique<SmartArrayRaid5Reader>(readerOpts);
 }
 
+void initForRaid6(ProgramOptions &opts)
+{
+    SmartArrayRaid6ReaderOptions readerOpts = {
+        .stripeSize = opts.stripeSize,
+        .parityDelay = opts.parityDelay
+    };
+
+    drivesPathVectorToDeviceReaderVector(opts.drives, readerOpts.driveReaders);
+
+    reader = std::make_unique<SmartArrayRaid6Reader>(readerOpts);
+}
+
 int main(int argc, char** argv)
 {
     ProgramOptions opts = {
@@ -214,8 +227,8 @@ int main(int argc, char** argv)
             initForRaid5(opts);
             break;
         case 6:
-            std::cerr << "RAID 6 is not implemented yet." << std::endl;
-            return -1;
+            initForRaid6(opts);
+            break;
         case 10:
             std::cerr << "RAID 10 is not implemented yet and probably won't be. Just use RAID 0 with 1 drive from each RAID 1 group." << std::endl;
             return -1;

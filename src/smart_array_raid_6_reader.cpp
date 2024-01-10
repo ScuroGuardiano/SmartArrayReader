@@ -1,4 +1,4 @@
-#include "smart_array_raid_5_reader.hpp"
+#include "smart_array_raid_6_reader.hpp"
 #include <math.h>
 #include <memory.h>
 #include <iostream>
@@ -7,19 +7,20 @@
 #include <algorithm>
 #include <memory>
 
-SmartArrayRaid5Reader::SmartArrayRaid5Reader(SmartArrayRaid5ReaderOptions &options)
+SmartArrayRaid6Reader::SmartArrayRaid6Reader(SmartArrayRaid6ReaderOptions &options)
 {
     this->driveName = options.readerName;
     this->parityDelay = options.parityDelay;
     this->stripeSizeInBytes = options.stripeSize * 1024;
-    
-    if (options.driveReaders.size() < 3)
+
+    if (options.driveReaders.size() < 4)
     {
-        throw std::invalid_argument("For RAID 5 at least 3 drives must be provider (one can be missing but still it has to be in the driveReaders list represented with nullptr)");
+        throw std::invalid_argument("For RAID 6 at least 4 drives must be provider (two can be missing but still they have to be in the driveReaders list represented with nullptr)");
     }
 
     int missingDrives = 0;
     std::vector<u_int64_t> drivesSizes;
+
 
     for (auto& drive : options.driveReaders)
     {
@@ -27,7 +28,11 @@ SmartArrayRaid5Reader::SmartArrayRaid5Reader(SmartArrayRaid5ReaderOptions &optio
         {
             if (missingDrives > 0)
             {
-                throw std::invalid_argument("For RAID 5 only 1 missing drive is allowed.");
+                throw std::runtime_error("Sowwi but for now only 1 missing drive is supported with RAID 6. Reed Solomon's kinda hard :(");
+            }
+            if (missingDrives > 1)
+            {
+                throw std::invalid_argument("For RAID 6 only 2 missing drives are allowed.");
             }
             missingDrives++;
             this->drives.push_back(drive);
@@ -41,26 +46,19 @@ SmartArrayRaid5Reader::SmartArrayRaid5Reader(SmartArrayRaid5ReaderOptions &optio
     this->singleDriveSize = *std::min_element(drivesSizes.begin(), drivesSizes.end());
 
     // 32MiB + something from the end of drive are stored controller metadata.
-    // Data are stored until that metadata + *something* in RAID 5
+    // Data are stored until that metadata + *something* in RAID 6
     // Although I don't think if we need to get this correctly.
     // TODO: Find out how to calculate this "something"
     this->singleDriveSize -= 1024 * 1024 * 32;
 }
 
-int SmartArrayRaid5Reader::read(void *buf, u_int32_t len, u_int64_t offset)
+int SmartArrayRaid6Reader::read(void *buf, u_int32_t len, u_int64_t offset)
 {
     if (offset >= this->driveSize())
     {
         std::cerr << "Tried to read from offset exceeding array size. Skipping." << std::endl;
         return -1;
     }
-
-    #ifdef LOGGING_ENABLED
-    std::cout << "------- READ -------" << std::endl;
-    std::cout << "Len:        " << len << std::endl;
-    std::cout << "Offset:     " << offset << std::endl;
-    std::cout << "Total size: " << this->totalArraySize() << std::endl;
-    #endif
 
     u_int64_t stripenum = this->stripeNumber(offset);
     u_int32_t stripeRelativeOffset = this->stripeRelativeOffset(stripenum, offset);
@@ -81,35 +79,42 @@ int SmartArrayRaid5Reader::read(void *buf, u_int32_t len, u_int64_t offset)
     return 0;
 }
 
-u_int64_t SmartArrayRaid5Reader::driveSize()
+u_int64_t SmartArrayRaid6Reader::driveSize()
 {
     // I am skipping last stripe on drive if it's not whole
     // I don't know how Smart Array hanle that, does it use it or skip it?
     // For simplicity sake I will skip it for now
     // TODO: Check if last, not whole stripe is used. If it used, add code to read from it.
     u_int64_t wholeStripesOnDrive = this->singleDriveSize / this->stripeSizeInBytes;
-    return wholeStripesOnDrive * this->stripeSizeInBytes * (drives.size() - 1);
+    return wholeStripesOnDrive * this->stripeSizeInBytes * (drives.size() - 2);
 }
 
-u_int64_t SmartArrayRaid5Reader::stripeNumber(u_int64_t offset)
+u_int64_t SmartArrayRaid6Reader::stripeNumber(u_int64_t offset)
 {
     return offset / this->stripeSizeInBytes;
 }
 
-u_int32_t SmartArrayRaid5Reader::stripeRelativeOffset(u_int64_t stripenum, u_int64_t offset)
+u_int32_t SmartArrayRaid6Reader::stripeRelativeOffset(u_int64_t stripenum, u_int64_t offset)
 {
     return offset - stripenum * this->stripeSizeInBytes;
 }
 
-u_int16_t SmartArrayRaid5Reader::stripeDriveNumber(u_int64_t stripenum)
+u_int16_t SmartArrayRaid6Reader::stripeDriveNumber(u_int64_t stripenum)
 {
-    u_int64_t currentStripeRow = stripenum / (drives.size() - 1);
+    u_int64_t currentStripeRow = stripenum / (drives.size() - 2);
     u_int32_t parityCycle = (this->drives.size() * this->parityDelay);
-    u_int32_t parityCycleRow = currentStripeRow % parityCycle;
+    u_int32_t reedSolomonCycleRow = currentStripeRow % parityCycle;
+    u_int32_t parityCycleRow = (currentStripeRow + this->parityDelay) % parityCycle;
+    u_int16_t reedSolomonDrive = drives.size() - (reedSolomonCycleRow / this->parityDelay) - 1;
     u_int16_t parityDrive = drives.size() - (parityCycleRow / this->parityDelay) - 1;
-    u_int16_t stripeDrive = stripenum % (drives.size() - 1);
-
+    u_int16_t stripeDrive = stripenum % (drives.size() - 2);
+    
+    // ORDER OF THOSE IFS MATTERS!
     if ((stripeDrive - parityDrive) >= 0)
+    {
+        stripeDrive++;
+    }
+    if ((stripeDrive - reedSolomonDrive) >= 0)
     {
         stripeDrive++;
     }
@@ -117,26 +122,17 @@ u_int16_t SmartArrayRaid5Reader::stripeDriveNumber(u_int64_t stripenum)
     return stripeDrive;
 }
 
-u_int64_t SmartArrayRaid5Reader::stripeDriveOffset(u_int64_t stripenum, u_int32_t stripeRelativeOffset)
+u_int64_t SmartArrayRaid6Reader::stripeDriveOffset(u_int64_t stripenum, u_int32_t stripeRelativeOffset)
 {
-    u_int64_t currentStripeRow = stripenum / (drives.size() - 1);
+    u_int64_t currentStripeRow = stripenum / (drives.size() - 2);
 
     return (currentStripeRow * this->stripeSizeInBytes) + stripeRelativeOffset;
 }
 
-u_int32_t SmartArrayRaid5Reader::readFromStripe(void *buf, u_int64_t stripenum, u_int32_t stripeRelativeOffset, u_int32_t len)
+u_int32_t SmartArrayRaid6Reader::readFromStripe(void *buf, u_int64_t stripenum, u_int32_t stripeRelativeOffset, u_int32_t len)
 {
     auto drivenum = stripeDriveNumber(stripenum);
     auto driveOffset = stripeDriveOffset(stripenum, stripeRelativeOffset);
-
-    #ifdef LOGGING_ENABLED
-    std::cout << "------ STRIPE ------" << std::endl;
-    std::cout << "Stripe num: " << stripenum << std::endl;
-    std::cout << "Stripe off: " << stripeRelativeOffset << std::endl;
-    std::cout << "Drive num:  " << drivenum << std::endl;
-    std::cout << "Drive off:  " << driveOffset << std::endl;
-    std::cout << "Len:        " << len << std::endl;
-    #endif
 
     if ((len + stripeRelativeOffset) > this->stripeSizeInBytes)
     {
@@ -159,14 +155,39 @@ u_int32_t SmartArrayRaid5Reader::readFromStripe(void *buf, u_int64_t stripenum, 
     return len;
 }
 
-u_int32_t SmartArrayRaid5Reader::recoverForDrive(void *buf, u_int16_t drivenum, u_int64_t driveOffset, u_int32_t len)
+bool SmartArrayRaid6Reader::isReedSolomonDrive(u_int16_t drivenum, u_int64_t driveOffset)
+{
+    u_int64_t currentStripeRow = driveOffset / this->stripeSizeInBytes;
+    u_int32_t parityCycle = (this->drives.size() * this->parityDelay);
+    u_int32_t reedSolomonCycleRow = currentStripeRow % parityCycle;
+    u_int16_t reedSolomonDrive = drives.size() - (reedSolomonCycleRow / this->parityDelay) - 1;
+
+    return drivenum == reedSolomonDrive;
+}
+
+bool SmartArrayRaid6Reader::isParityDrive(u_int16_t drivenum, u_int64_t driveOffset)
+{
+    u_int64_t currentStripeRow = driveOffset / this->stripeSizeInBytes;
+    u_int32_t parityCycle = (this->drives.size() * this->parityDelay);
+    u_int32_t parityCycleRow = (currentStripeRow + this->parityDelay) % parityCycle;
+    u_int16_t parityDrive = drives.size() - (parityCycleRow / this->parityDelay) - 1;
+
+    return drivenum == parityDrive;
+}
+
+u_int32_t SmartArrayRaid6Reader::recoverForDrive(void *buf, u_int16_t drivenum, u_int64_t driveOffset, u_int32_t len)
 {
     std::vector<std::shared_ptr<DriveReader>> otherDrives;
     for (int i = 0; i < this->drives.size(); i++)
     {
-        if (i != drivenum)
+        if (i != drivenum && !this->isReedSolomonDrive(i, driveOffset))
         {
-            // if drivenum is missing drive other drives should always be defined
+            auto drive = this->drives[i];
+            if (!drive)
+            {
+                // We have another failed data drive, we need to use recovery for 2 missing drives
+                return this->recoverForTwoDrives(buf, drivenum, i, driveOffset, len);
+            }
             otherDrives.push_back(this->drives[i]);
         }
     }
@@ -199,4 +220,10 @@ u_int32_t SmartArrayRaid5Reader::recoverForDrive(void *buf, u_int16_t drivenum, 
 
     memcpy(buf, out, len);
     return len;
+}
+
+u_int32_t SmartArrayRaid6Reader::recoverForTwoDrives(void *buf, u_int16_t drive1num, u_int16_t drive2num, u_int64_t driveOffset, u_int32_t len)
+{
+    throw std::runtime_error("Not implemented yet :c");
+    return u_int32_t();
 }
