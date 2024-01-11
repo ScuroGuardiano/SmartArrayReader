@@ -35,11 +35,13 @@ private:
     // Stripes will be index from 0.
     u_int64_t stripeNumber(u_int64_t offset);
     u_int32_t stripeRelativeOffset(u_int64_t stripenum, u_int64_t offset);
-    u_int16_t stripeDriveNumber(u_int64_t stripenum);
+    u_int8_t stripeDriveNumber(u_int64_t stripenum);
     u_int64_t stripeDriveOffset(u_int64_t stripenum, u_int32_t stripeRelativeOffset);
     u_int32_t readFromStripe(void* buf, u_int64_t stripenum, u_int32_t stripeRelativeOffset, u_int32_t len);
-    bool isReedSolomonDrive(u_int16_t drivenum, u_int64_t driveOffset);
-    bool isParityDrive(u_int16_t drivenum, u_int64_t driveOffset);
-    u_int32_t recoverForDrive(void* buf, u_int16_t drivenum, u_int64_t driveOffset, u_int32_t len);
-    u_int32_t recoverForTwoDrives(void* buf, u_int16_t drive1num, u_int16_t drive2num, u_int64_t driveOffset, u_int32_t len);
+    bool isReedSolomonDrive(u_int8_t drivenum, u_int64_t driveOffset);
+    bool isParityDrive(u_int8_t drivenum, u_int64_t driveOffset);
+    u_int32_t recoverForDrive(void* buf, u_int8_t drivenum, u_int64_t driveOffset, u_int32_t len);
+    u_int32_t recoverForTwoDrives(void* buf, u_int8_t drive1num, u_int8_t drive2num, u_int64_t driveOffset, u_int32_t len);
+    u_int32_t recoverForOneMissingDataDrive(void* buf, u_int8_t drivenum, u_int64_t driveOffset, u_int32_t len);
+    u_int32_t recoverForTwoMissingDataDrives(void* buf, u_int8_t drive1num, u_int8_t drive2num, u_int64_t driveOffset, u_int32_t len);
 };
