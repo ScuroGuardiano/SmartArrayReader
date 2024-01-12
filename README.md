@@ -3,7 +3,7 @@
 
 > Everything was implemented and tested using HP Smart Array P420 with 8.00-0 firmware version. I don't know if it will work correctly for arrays operated with different controller or firmware version.
 
-You had very nice Hardware RAID 6 array operated with HP Smart Array Controller but controller died? Now you have to buy new controller and wait 'til it arrives and pray for it to work to recover your data? **NOT ANYMORE**. Here you have tool to read smart drive array, all you need to do is to modprobe nbd kernel module and provide drives in correct order with raid level:
+You had very nice Hardware RAID 6 array operated with HP Smart Array Controller but the controller have died? Now you have to buy new controller and wait 'til it arrives and pray for it to work in order to recover your precious data? **NOT ANYMORE**. Here it is brand new tool to read smart drive arrays, all you need to do is to `modprobe nbd` kernel module and provide drives in the correct order with raid level:
 ```sh
 sudo modprobe nbd
 sudo ./hewlett-read --raid=6 /dev/sdb /dev/sdc /dev/sdd /dev/sde
@@ -16,7 +16,7 @@ You must remember to mount it as readonly `-o ro`, otherwise it will fail.
 
 And here you go, you can now safely copy all your data without buying another Smart Array Controller.
 
-But wait! What if you have forgotten the order of drives? Don't worry, just use `packard-tell`!
+But wait! What if you have forgotten the order of the drives? Don't worry, just use `packard-tell`!
 ```sh
 sudo ./packard-tell /dev/sdd /dev/sdb /dev/sdc /dev/sde
 ```
