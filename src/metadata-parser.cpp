@@ -145,10 +145,10 @@ void parseMetadata(const u8 *metadataBin, P420Metadata *output)
             .label = std::string((char*)ld->label, sizeof(ld->label)),
             .physicalDriveCount = ld->physicalDriveCount,
             .physicalDrivesNeededToRun = ld->physicalDriveNeededForLogicalDriveToRun,
-            .stripeSizeInBytes = decodeNumber(ld->stripeSizeIn512byteSectorsBigEndian) * 512,
-            .logicalDriveSizeInBytes = decodeNumber(ld->logicalDriveSizeIn512byteSectorsBigEndian) * 512,
-            .offsetOnEachPhysicalDriveInBytes = decodeNumber(ld->offsetOnEachPhysicalDriveIn512byteSectorsBigEndian) * 512,
-            .spaceTakenOnEachPhysicalDriveInBytes = decodeNumber(ld->spaceTakenOnEachPhysicalDrivesIn512byteSectorsBigEndian) * 512,
+            .stripeSizeInBytes = decodeNumber(ld->stripeSizeIn512byteSectorsBigEndian) * 512u,
+            .logicalDriveSizeInBytes = decodeNumber(ld->logicalDriveSizeIn512byteSectorsBigEndian) * 512u,
+            .offsetOnEachPhysicalDriveInBytes = decodeNumber(ld->offsetOnEachPhysicalDriveIn512byteSectorsBigEndian) * 512u,
+            .spaceTakenOnEachPhysicalDriveInBytes = decodeNumber(ld->spaceTakenOnEachPhysicalDrivesIn512byteSectorsBigEndian) * 512u,
         };
 
         // Physical Drives
