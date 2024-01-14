@@ -22,7 +22,7 @@ struct SmartArrayRaid10ReaderOptions
 class SmartArrayRaid10Reader : public SmartArrayReaderBase
 {
 public:
-    SmartArrayRaid10Reader(SmartArrayRaid10ReaderOptions& options);
+    SmartArrayRaid10Reader(const SmartArrayRaid10ReaderOptions& options);
     int read(void *buf, u_int32_t len, u_int64_t offset) override;
     u_int64_t driveSize() override;
 private:

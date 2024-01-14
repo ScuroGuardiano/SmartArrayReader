@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <memory>
 
-SmartArrayRaid6Reader::SmartArrayRaid6Reader(SmartArrayRaid6ReaderOptions &options)
+SmartArrayRaid6Reader::SmartArrayRaid6Reader(const SmartArrayRaid6ReaderOptions &options)
 {
     this->driveName = options.readerName;
     this->parityDelay = options.parityDelay;

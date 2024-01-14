@@ -22,7 +22,7 @@ struct SmartArrayRaid6ReaderOptions
 class SmartArrayRaid6Reader : public SmartArrayReaderBase
 {
 public:
-    SmartArrayRaid6Reader(SmartArrayRaid6ReaderOptions& options);
+    SmartArrayRaid6Reader(const SmartArrayRaid6ReaderOptions& options);
     int read(void *buf, u_int32_t len, u_int64_t offset) override;
 
 private:

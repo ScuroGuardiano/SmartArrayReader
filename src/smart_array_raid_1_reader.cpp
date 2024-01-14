@@ -4,7 +4,7 @@
 #include <iostream>
 #include <memory>
 
-SmartArrayRaid1Reader::SmartArrayRaid1Reader(SmartArrayRaid1ReaderOptions& options)
+SmartArrayRaid1Reader::SmartArrayRaid1Reader(const SmartArrayRaid1ReaderOptions& options)
 {
     this->driveName = options.readerName;
     std::vector<u_int64_t> drivesSizes;

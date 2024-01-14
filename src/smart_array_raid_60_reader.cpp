@@ -1,6 +1,6 @@
 #include "smart_array_raid_60_reader.hpp"
 
-SmartArrayRaid60Reader::SmartArrayRaid60Reader(SmartArrayRaid60ReaderOptions &options)
+SmartArrayRaid60Reader::SmartArrayRaid60Reader(const SmartArrayRaid60ReaderOptions &options)
 {
     if (options.driveReaders.size() < 6)
     {
@@ -56,7 +56,7 @@ SmartArrayRaid60Reader::SmartArrayRaid60Reader(SmartArrayRaid60ReaderOptions &op
     }
 
     SmartArrayRaid0ReaderOptions reader0Options {
-        .stripeSize = options.stripeSize,
+        .stripeSize = options.stripeSize * (drivesPerParityGroup - 2),
         .driveReaders = parityGroupsReaders,
         .readerName = "RAID 60 - Raid 0 reader",
         .size = options.size,

@@ -21,7 +21,7 @@ struct SmartArrayRaid0ReaderOptions
 class SmartArrayRaid0Reader : public SmartArrayReaderBase
 {
 public:
-    SmartArrayRaid0Reader(SmartArrayRaid0ReaderOptions& options);
+    SmartArrayRaid0Reader(const SmartArrayRaid0ReaderOptions& options);
     int read(void *buf, u_int32_t len, u_int64_t offset) override;
 
 private:

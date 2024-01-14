@@ -24,7 +24,7 @@ struct SmartArrayRaid50ReaderOptions
 class SmartArrayRaid50Reader : public SmartArrayReaderBase
 {
 public:
-    SmartArrayRaid50Reader(SmartArrayRaid50ReaderOptions& options);
+    SmartArrayRaid50Reader(const SmartArrayRaid50ReaderOptions& options);
     int read(void *buf, u_int32_t len, u_int64_t offset) override;
     u_int64_t driveSize() override;
 private:

@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <memory>
 
-SmartArrayRaid0Reader::SmartArrayRaid0Reader(SmartArrayRaid0ReaderOptions &options)
+SmartArrayRaid0Reader::SmartArrayRaid0Reader(const SmartArrayRaid0ReaderOptions &options)
 {
     this->driveName = options.readerName;
     this->stripeSizeInBytes = options.stripeSize * 1024;

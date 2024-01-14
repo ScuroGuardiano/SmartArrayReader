@@ -1,7 +1,7 @@
 #include "smart_array_raid_10_reader.hpp"
 #include <vector>
 
-SmartArrayRaid10Reader::SmartArrayRaid10Reader(SmartArrayRaid10ReaderOptions &options)
+SmartArrayRaid10Reader::SmartArrayRaid10Reader(const SmartArrayRaid10ReaderOptions &options)
 {
     // From what I've observed my raid controller only supports 2 drives for RAID 1
     // So I will assume each mirror group contains 2 drives.
@@ -16,43 +16,37 @@ SmartArrayRaid10Reader::SmartArrayRaid10Reader(SmartArrayRaid10ReaderOptions &op
         throw std::invalid_argument("For RAID 10 you must provide even amount of drives.");
     }
 
-    std::vector<std::shared_ptr<DriveReader>> mirrorGroupsReaders;
-    SmartArrayRaid1ReaderOptions mirrorOptions;
-    int missingDrives = 0;
+    std::vector<std::shared_ptr<DriveReader>> mirrorReaders;
 
-    for (auto drive : options.driveReaders)
+    /*
+        Little explanation to RAID 10 on HP Smart Array Controller
+        It's not
+        A1 A1 A2 A2 A3 A3
+        But
+        A1 A2 A3 A1 A2 A3
+        So in case of 3 drives we must pair them like that: 1 -> 4, 2 -> 5, 3 -> 6 
+    */
+    for (int i = 0; i < options.driveReaders.size() / 2; i++)
     {
-        mirrorOptions.readerName += drive->name() + " ";
+        auto drive1 = options.driveReaders[i];
+        auto drive2 = options.driveReaders[i + options.driveReaders.size() / 2];
 
-        if (!drive)
+        if (!drive1 && !drive2)
         {
-            missingDrives++;
-            if (missingDrives > 1)
-            {
-                throw std::invalid_argument("For RAID 10 only 1 missing drive per mirror group is allowed.");
-            }
+            throw std::invalid_argument("For RAID 10 only 1 missing drive per mirror is allowed.");
         }
 
-        mirrorOptions.driveReaders.push_back(drive);
-
-        if (mirrorOptions.driveReaders.size() == 2)
-        {
-            // Remove leading space
-            mirrorOptions.readerName.erase(mirrorOptions.readerName.end() - 1);
-            mirrorOptions.size = options.size / (options.driveReaders.size() / 2);
-            mirrorOptions.offset = options.offset;
-
-            mirrorGroupsReaders.push_back(
-                std::make_shared<SmartArrayRaid1Reader>(mirrorOptions)
-            );
-            mirrorOptions = SmartArrayRaid1ReaderOptions();
-            missingDrives = 0;
-        }
+        mirrorReaders.push_back(std::make_shared<SmartArrayRaid1Reader>(SmartArrayRaid1ReaderOptions {
+            .driveReaders = { drive1, drive2 },
+            .readerName = "RAID 10 Mirror: " + drive1->name() + " " + drive2->name(),
+            .size = options.size / (options.driveReaders.size() / 2),
+            .offset = options.offset
+        }));
     }
 
     SmartArrayRaid0ReaderOptions reader0Options {
         .stripeSize = options.stripeSize,
-        .driveReaders = mirrorGroupsReaders,
+        .driveReaders = mirrorReaders,
         .readerName = "RAID 10 - Raid 0 reader",
         .size = options.size,
         // Offset is zero here, because in raid 10 raid 0 is not
