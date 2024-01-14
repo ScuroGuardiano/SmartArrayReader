@@ -10,6 +10,9 @@
 #include "smart_array_raid_1_reader.hpp"
 #include "smart_array_raid_5_reader.hpp"
 #include "smart_array_raid_6_reader.hpp"
+#include "smart_array_raid_10_reader.hpp"
+#include "smart_array_raid_50_reader.hpp"
+#include "smart_array_raid_60_reader.hpp"
 
 std::unique_ptr<DriveReader> reader;
 
@@ -173,8 +176,10 @@ void drivesPathVectorToDeviceReaderVector(
 
 void initForRaid0(ProgramOptions &opts)
 {
-    SmartArrayRaid0ReaderOptions readerOpts = {
-        .stripeSize = opts.stripeSize
+    SmartArrayRaid0ReaderOptions readerOpts {
+        .stripeSize = opts.stripeSize,
+        .size = opts.size,
+        .offset = opts.offset
     };
 
     drivesPathVectorToDeviceReaderVector(opts.drives, readerOpts.driveReaders);
@@ -185,16 +190,21 @@ void initForRaid0(ProgramOptions &opts)
 
 void initForRaid1(ProgramOptions &opts)
 {
-    SmartArrayRaid1ReaderOptions readerOpts;
+    SmartArrayRaid1ReaderOptions readerOpts {
+        .size = opts.size,
+        .offset = opts.offset
+    };
     drivesPathVectorToDeviceReaderVector(opts.drives, readerOpts.driveReaders);
     reader = std::make_unique<SmartArrayRaid1Reader>(readerOpts);
 }
 
 void initForRaid5(ProgramOptions &opts)
 {
-    SmartArrayRaid5ReaderOptions readerOpts = {
+    SmartArrayRaid5ReaderOptions readerOpts {
         .stripeSize = opts.stripeSize,
-        .parityDelay = opts.parityDelay
+        .parityDelay = opts.parityDelay,
+        .size = opts.size,
+        .offset = opts.offset
     };
 
     drivesPathVectorToDeviceReaderVector(opts.drives, readerOpts.driveReaders);
@@ -204,14 +214,59 @@ void initForRaid5(ProgramOptions &opts)
 
 void initForRaid6(ProgramOptions &opts)
 {
-    SmartArrayRaid6ReaderOptions readerOpts = {
+    SmartArrayRaid6ReaderOptions readerOpts {
         .stripeSize = opts.stripeSize,
-        .parityDelay = opts.parityDelay
+        .parityDelay = opts.parityDelay,
+        .size = opts.size,
+        .offset = opts.offset
     };
 
     drivesPathVectorToDeviceReaderVector(opts.drives, readerOpts.driveReaders);
 
     reader = std::make_unique<SmartArrayRaid6Reader>(readerOpts);
+}
+
+void initForRaid10(ProgramOptions &opts)
+{
+    SmartArrayRaid10ReaderOptions readerOpts {
+        .stripeSize = opts.stripeSize,
+        .size = opts.size,
+        .offset = opts.offset
+    };
+
+    drivesPathVectorToDeviceReaderVector(opts.drives, readerOpts.driveReaders);
+
+    reader = std::make_unique<SmartArrayRaid10Reader>(readerOpts);
+}
+
+void initForRaid50(ProgramOptions &opts)
+{
+    SmartArrayRaid50ReaderOptions readerOpts {
+        .stripeSize = opts.stripeSize,
+        .parityDelay = opts.parityDelay,
+        .parityGroups = opts.parityGroups,
+        .size = opts.size,
+        .offset = opts.offset
+    };
+
+    drivesPathVectorToDeviceReaderVector(opts.drives, readerOpts.driveReaders);
+
+    reader = std::make_unique<SmartArrayRaid50Reader>(readerOpts);
+}
+
+void initForRaid60(ProgramOptions &opts)
+{
+    SmartArrayRaid60ReaderOptions readerOpts {
+        .stripeSize = opts.stripeSize,
+        .parityDelay = opts.parityDelay,
+        .parityGroups = opts.parityGroups,
+        .size = opts.size,
+        .offset = opts.offset
+    };
+
+    drivesPathVectorToDeviceReaderVector(opts.drives, readerOpts.driveReaders);
+
+    reader = std::make_unique<SmartArrayRaid60Reader>(readerOpts);
 }
 
 int main(int argc, char** argv)
@@ -261,14 +316,14 @@ int main(int argc, char** argv)
             initForRaid6(opts);
             break;
         case 10:
-            std::cerr << "RAID 10 is not implemented yet and probably won't be. Just use RAID 0 with 1 drive from each RAID 1 group." << std::endl;
-            return -1;
+            initForRaid10(opts);
+            break;
         case 50:
-            std::cerr << "RAID 50 is not implemented yet." << std::endl;
-            return -1;
+            initForRaid50(opts);
+            break;
         case 60:
-            std::cerr << "RAID 60 is not implemented yet." << std::endl;
-            return -1;
+            initForRaid60(opts);
+            break;
         case 2137:
             std::cerr << "Error: No RAID level was provided." << std::endl;
             return -1;

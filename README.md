@@ -42,9 +42,9 @@ and wait for ages for it to compile.
 
 ## TODO
 - [ ] RAID 6 with 2 missing drives - see [Raid 6 problem](./raid-6-problem)
-- [ ] RAID 10
-- [ ] RAID 50
-- [ ] RAID 60
+- [x] RAID 10
+- [x] RAID 50
+- [x] RAID 60
 - [ ] Better error handling
 - [ ] Code cleanup
 - [x] Reading metadata from drives with `packard-tell`

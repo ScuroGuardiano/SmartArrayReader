@@ -4,6 +4,9 @@
 
 class SmartArrayReaderBase : public DriveReader
 {
+public:
+    virtual u_int64_t driveSize() override;
+
 protected:
     // Smallest drive in the array
     u_int64_t singleDriveSize;
@@ -13,8 +16,6 @@ protected:
     /// @param size size in bytes
     /// @param maximumSize maximum size in bytes, if set to 0 then it's ignored
     void setSize(u_int64_t size, u_int64_t maximumSize);
-    u_int64_t driveSize() override;
-
 
     /// @brief Sets physical drive offset, use after setting "singleDriveSize".
     /// If offset is bigger than single drive sie then std::invalid_argument is thrown
