@@ -15,7 +15,7 @@ SmartArrayRaid6Reader::SmartArrayRaid6Reader(SmartArrayRaid6ReaderOptions &optio
 
     if (options.driveReaders.size() < 4)
     {
-        throw std::invalid_argument("For RAID 6 at least 4 drives must be provider (two can be missing but still they have to be in the driveReaders list represented with nullptr)");
+        throw std::invalid_argument("For RAID 6 at least 4 drives must be provided (two can be missing but still they have to be in the driveReaders list represented with nullptr)");
     }
 
     int missingDrives = 0;
@@ -28,7 +28,7 @@ SmartArrayRaid6Reader::SmartArrayRaid6Reader(SmartArrayRaid6ReaderOptions &optio
         {
             if (missingDrives > 0)
             {
-                throw std::runtime_error("Sowwi but for now only 1 missing drive is supported with RAID 6. Reed Solomon's kinda hard :(");
+                throw std::invalid_argument("Sowwi but for now only 1 missing drive is supported with RAID 6. Reed Solomon's kinda hard :(");
             }
             if (missingDrives > 1)
             {
@@ -45,11 +45,20 @@ SmartArrayRaid6Reader::SmartArrayRaid6Reader(SmartArrayRaid6ReaderOptions &optio
 
     this->singleDriveSize = *std::min_element(drivesSizes.begin(), drivesSizes.end());
 
-    // 32MiB + something from the end of drive are stored controller metadata.
-    // Data are stored until that metadata + *something* in RAID 6
-    // Although I don't think if we need to get this correctly.
-    // TODO: Find out how to calculate this "something"
+    // 32MiB from the end of drive are stored controller metadata.
     this->singleDriveSize -= 1024 * 1024 * 32;
+    this->setPhysicalDriveOffset(options.offset);
+
+    u_int64_t wholeStripesOnDrive = (this->singleDriveSize - this->getPhysicalDriveOffset()) / this->stripeSizeInBytes;
+    u_int64_t defaultSize =  wholeStripesOnDrive * this->stripeSizeInBytes * (drives.size() - 2);
+    u_int64_t maximumSize = (this->singleDriveSize - this->getPhysicalDriveOffset()) * (drives.size() - 2);
+
+    this->setSize(defaultSize, 0);
+
+    if (options.size > 0)
+    {
+        this->setSize(options.size, maximumSize);
+    }
 }
 
 int SmartArrayRaid6Reader::read(void *buf, u_int32_t len, u_int64_t offset)
@@ -77,16 +86,6 @@ int SmartArrayRaid6Reader::read(void *buf, u_int32_t len, u_int64_t offset)
     }
 
     return 0;
-}
-
-u_int64_t SmartArrayRaid6Reader::driveSize()
-{
-    // I am skipping last stripe on drive if it's not whole
-    // I don't know how Smart Array hanle that, does it use it or skip it?
-    // For simplicity sake I will skip it for now
-    // TODO: Check if last, not whole stripe is used. If it used, add code to read from it.
-    u_int64_t wholeStripesOnDrive = this->singleDriveSize / this->stripeSizeInBytes;
-    return wholeStripesOnDrive * this->stripeSizeInBytes * (drives.size() - 2);
 }
 
 u_int64_t SmartArrayRaid6Reader::stripeNumber(u_int64_t offset)
@@ -126,7 +125,7 @@ u_int64_t SmartArrayRaid6Reader::stripeDriveOffset(u_int64_t stripenum, u_int32_
 {
     u_int64_t currentStripeRow = stripenum / (drives.size() - 2);
 
-    return (currentStripeRow * this->stripeSizeInBytes) + stripeRelativeOffset;
+    return (currentStripeRow * this->stripeSizeInBytes) + stripeRelativeOffset + this->getPhysicalDriveOffset();
 }
 
 u_int32_t SmartArrayRaid6Reader::readFromStripe(void *buf, u_int64_t stripenum, u_int32_t stripeRelativeOffset, u_int32_t len)

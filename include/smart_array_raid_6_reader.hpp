@@ -3,7 +3,7 @@
 #include <sys/types.h>
 #include <vector>
 #include <memory>
-#include "drive_reader.hpp"
+#include "smart_array_reader_base.hpp"
 
 struct SmartArrayRaid6ReaderOptions
 {
@@ -15,9 +15,11 @@ struct SmartArrayRaid6ReaderOptions
     /// @brief drives path
     std::vector<std::shared_ptr<DriveReader>> driveReaders;
     std::string readerName;
+    u_int64_t size;
+    u_int64_t offset;
 };
 
-class SmartArrayRaid6Reader : public DriveReader
+class SmartArrayRaid6Reader : public SmartArrayReaderBase
 {
 public:
     SmartArrayRaid6Reader(SmartArrayRaid6ReaderOptions& options);
@@ -28,8 +30,6 @@ private:
     u_int32_t stripeSizeInBytes;
     u_int16_t parityDelay;
 
-    // Smallest drive in the array
-    u_int64_t singleDriveSize;
     std::vector<std::shared_ptr<DriveReader>> drives;
 
     // Stripes will be index from 0.

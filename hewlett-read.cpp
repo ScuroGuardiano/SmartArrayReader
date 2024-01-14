@@ -19,6 +19,9 @@ struct ProgramOptions
     u_int32_t stripeSize;
     u_int16_t parityDelay;
     u_int16_t raidLevel;
+    u_int16_t parityGroups;
+    u_int64_t size;
+    u_int64_t offset;
     std::vector<std::string> drives;
     std::string outputDevice;
 };
@@ -33,8 +36,11 @@ static argp_option options[] = {
     { "stripe-size", 's', "256", 0, "Stripe size in KiB. Default: 256", 0 },
     { "parity-delay", 'p', "16", 0, "Parity delay, P420 Controllers use parity delay for their RAID 5, read more: https://www.freeraidrecovery.com/library/delayed-parity.aspx. Default: 16", 0 },
     { "delay", 'p', 0, OPTION_ALIAS, 0, 0 },
-    { "raid", 'r', "<level>", 0, "Raid level, required!", 0},
+    { "raid", 'r', "<level>", 0, "Raid level, required!", 0 },
     { "output", 'o', "/dev/nbd0", 0, "Output device, it has to be /dev/nbdx. Default: /dev/nbd0", 0 },
+    { "parity-groups", 'g', "2", 0, "Parity groups in RAID 50 and 60", 0 },
+    { "size", 'S', "0", 0, "Size of logical drives, 0 is maximum possible. Default: 0" },
+    { "offset", 'O', "0", 0, "Offset on each physical drive, Default: 0" },
     {0}
 };
 
@@ -75,6 +81,22 @@ u_int32_t argToU32(std::string arg, std::string argName)
     }
 }
 
+u_int64_t argToU64(std::string arg, std::string argName)
+{
+    try 
+    {
+        return std::stoull(arg);
+    }
+    catch(std::invalid_argument const& ex)
+    {
+        throw std::invalid_argument("Argument " + argName + " (value:" + arg + ") is invalid. It has to be unsigned 64 bit integer.");
+    }
+    catch(std::out_of_range const& ex)
+    {
+        throw std::out_of_range("Argument " + argName + " (value:" + arg + ") is too large!. It has to be unsigned 64 bit integer.");
+    }
+}
+
 error_t parseOpt(int key, char *arg, argp_state *state)
 {
     ProgramOptions* options = reinterpret_cast<ProgramOptions*>(state->input);
@@ -93,6 +115,15 @@ error_t parseOpt(int key, char *arg, argp_state *state)
         break;
     case 'o':
         options->outputDevice = arg;
+        break;
+    case 'g':
+        options->parityGroups = argToU16(arg, "parity-groups");
+        break;
+    case 'S':
+        options->size = argToU64(arg, "size");
+        break;
+    case 'O':
+        options->offset = argToU64(arg, "offset");
         break;
     case ARGP_KEY_ARG:
         if (state->arg_num > 256)

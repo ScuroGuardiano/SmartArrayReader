@@ -3,16 +3,18 @@
 #include <sys/types.h>
 #include <vector>
 #include <memory>
-#include "drive_reader.hpp"
+#include "smart_array_reader_base.hpp"
 
 struct SmartArrayRaid1ReaderOptions
 {
     /// @brief drives path
     std::vector<std::shared_ptr<DriveReader>> driveReaders;
     std::string readerName;
+    u_int64_t size;
+    u_int64_t offset;
 };
 
-class SmartArrayRaid1Reader : public DriveReader
+class SmartArrayRaid1Reader : public SmartArrayReaderBase
 {
 public:
     SmartArrayRaid1Reader(SmartArrayRaid1ReaderOptions& options);
@@ -20,7 +22,5 @@ public:
     u_int64_t driveSize() override;
 
 private:
-    // Smallest drive in the array
-    u_int64_t singleDriveSize;
     std::vector<std::shared_ptr<DriveReader>> drives;
 };

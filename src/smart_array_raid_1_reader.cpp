@@ -30,6 +30,15 @@ SmartArrayRaid1Reader::SmartArrayRaid1Reader(SmartArrayRaid1ReaderOptions& optio
 
     // 32MiB from the end of drive are stored controller's metadata.
     this->singleDriveSize -= 1024 * 1024 * 32;
+    this->setPhysicalDriveOffset(options.offset);
+
+    u_int64_t maximumSize = this->singleDriveSize - this->getPhysicalDriveOffset();
+    this->setSize(maximumSize, 0);
+
+    if (options.size > 0)
+    {
+        this->setSize(options.size, this->singleDriveSize);
+    }
 }
 
 int SmartArrayRaid1Reader::read(void *buf, u_int32_t len, u_int64_t offset)
@@ -44,7 +53,7 @@ int SmartArrayRaid1Reader::read(void *buf, u_int32_t len, u_int64_t offset)
     {
         try
         {
-            return this->drives[i]->read(buf, len, offset);
+            return this->drives[i]->read(buf, len, offset + this->getPhysicalDriveOffset());
         }
         catch (std::exception& ex)
         {
@@ -60,9 +69,4 @@ int SmartArrayRaid1Reader::read(void *buf, u_int32_t len, u_int64_t offset)
     }
 
     return -1;
-}
-
-u_int64_t SmartArrayRaid1Reader::driveSize()
-{
-    return this->singleDriveSize;
 }
