@@ -191,7 +191,7 @@ u_int32_t SmartArrayRaid6Reader::readFromStripe(void *buf, u_int64_t stripenum, 
 
 bool SmartArrayRaid6Reader::isReedSolomonDrive(u_int16_t drivenum, u_int64_t driveOffset)
 {
-    u_int64_t currentStripeRow = driveOffset / this->stripeSizeInBytes;
+    u_int64_t currentStripeRow = (driveOffset - this->getPhysicalDriveOffset()) / this->stripeSizeInBytes;
     u_int32_t parityCycle = (this->drives.size() * this->parityDelay);
     u_int32_t reedSolomonCycleRow = currentStripeRow % parityCycle;
     u_int16_t reedSolomonDrive = drives.size() - (reedSolomonCycleRow / this->parityDelay) - 1;
@@ -201,7 +201,7 @@ bool SmartArrayRaid6Reader::isReedSolomonDrive(u_int16_t drivenum, u_int64_t dri
 
 bool SmartArrayRaid6Reader::isParityDrive(u_int16_t drivenum, u_int64_t driveOffset)
 {
-    u_int64_t currentStripeRow = driveOffset / this->stripeSizeInBytes;
+    u_int64_t currentStripeRow = (driveOffset - this->getPhysicalDriveOffset()) / this->stripeSizeInBytes;
     u_int32_t parityCycle = (this->drives.size() * this->parityDelay);
     u_int32_t parityCycleRow = (currentStripeRow + this->parityDelay) % parityCycle;
     u_int16_t parityDrive = drives.size() - (parityCycleRow / this->parityDelay) - 1;
