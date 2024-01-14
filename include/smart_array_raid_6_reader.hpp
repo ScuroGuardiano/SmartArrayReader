@@ -24,7 +24,6 @@ class SmartArrayRaid6Reader : public SmartArrayReaderBase
 public:
     SmartArrayRaid6Reader(SmartArrayRaid6ReaderOptions& options);
     int read(void *buf, u_int32_t len, u_int64_t offset) override;
-    u_int64_t driveSize() override;
 
 private:
     u_int32_t stripeSizeInBytes;

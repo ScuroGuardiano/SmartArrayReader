@@ -19,7 +19,6 @@ class SmartArrayRaid1Reader : public SmartArrayReaderBase
 public:
     SmartArrayRaid1Reader(SmartArrayRaid1ReaderOptions& options);
     int read(void *buf, u_int32_t len, u_int64_t offset) override;
-    u_int64_t driveSize() override;
 
 private:
     std::vector<std::shared_ptr<DriveReader>> drives;
