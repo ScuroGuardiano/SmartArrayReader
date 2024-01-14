@@ -36,9 +36,12 @@ SmartArrayRaid10Reader::SmartArrayRaid10Reader(const SmartArrayRaid10ReaderOptio
             throw std::invalid_argument("For RAID 10 only 1 missing drive per mirror is allowed.");
         }
 
+        std::string drive1Name = drive1 ? drive1->name() : "X";
+        std::string drive2Name = drive2 ? drive2->name() : "X";
+
         mirrorReaders.push_back(std::make_shared<SmartArrayRaid1Reader>(SmartArrayRaid1ReaderOptions {
             .driveReaders = { drive1, drive2 },
-            .readerName = "RAID 10 Mirror: " + drive1->name() + " " + drive2->name(),
+            .readerName = "RAID 10 Mirror: " + drive1Name + " " + drive2Name,
             .size = options.size / (options.driveReaders.size() / 2),
             .offset = options.offset
         }));

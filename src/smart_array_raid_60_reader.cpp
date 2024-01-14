@@ -25,7 +25,7 @@ SmartArrayRaid60Reader::SmartArrayRaid60Reader(const SmartArrayRaid60ReaderOptio
 
     for (auto drive : options.driveReaders)
     {
-        parityOptions.readerName += drive->name() + " ";
+        parityOptions.readerName += (drive ? drive->name() : "X") + " ";
 
         if (!drive)
         {
