@@ -52,7 +52,6 @@ SmartArrayRaid5Reader::SmartArrayRaid5Reader(const SmartArrayRaid5ReaderOptions 
 
     if (options.size > 0)
     {
-        std::cout << "5 SET SIZE" << std::endl;
         this->setSize(options.size, maximumSize);
     }
 }
@@ -71,7 +70,7 @@ int SmartArrayRaid5Reader::read(void *buf, u_int32_t len, u_int64_t offset)
     std::cout << "------- READ -------" << std::endl;
     std::cout << "Len:        " << len << std::endl;
     std::cout << "Offset:     " << offset << std::endl;
-    std::cout << "Total size: " << this->totalArraySize() << std::endl;
+    std::cout << "Total size: " << this->driveSize() << std::endl;
     #endif
 
     u_int64_t stripenum = this->stripeNumber(offset);
@@ -95,12 +94,25 @@ int SmartArrayRaid5Reader::read(void *buf, u_int32_t len, u_int64_t offset)
 
 u_int64_t SmartArrayRaid5Reader::stripeNumber(u_int64_t offset)
 {
-    return offset / this->stripeSizeInBytes;
+    u_int64_t stripenum = offset / this->stripeSizeInBytes;
+    if (this->isLastRow(stripenum / (drives.size() - 1)))
+    {
+        u_int64_t o = offset - (stripenum * this->stripeSizeInBytes);
+        u_int64_t lastStripeNum = o / this->lastRowStripeSize();
+        stripenum += lastStripeNum;
+    }
+
+    return stripenum;
 }
 
 u_int32_t SmartArrayRaid5Reader::stripeRelativeOffset(u_int64_t stripenum, u_int64_t offset)
 {
-    return offset - stripenum * this->stripeSizeInBytes;
+    u_int32_t o = offset - stripenum * this->stripeSizeInBytes;;
+    if (this->isLastRow(stripenum / (drives.size() - 1)))
+    {
+        o %= this->lastRowStripeSize();
+    }
+    return o;
 }
 
 u_int16_t SmartArrayRaid5Reader::stripeDriveNumber(u_int64_t stripenum)
@@ -122,25 +134,21 @@ u_int16_t SmartArrayRaid5Reader::stripeDriveNumber(u_int64_t stripenum)
 u_int64_t SmartArrayRaid5Reader::stripeDriveOffset(u_int64_t stripenum, u_int32_t stripeRelativeOffset)
 {
     u_int64_t currentStripeRow = stripenum / (drives.size() - 1);
-
-    if (this->isLastRow(currentStripeRow))
-    {
-        u_int64_t x = (currentStripeRow - 1) * this->stripeSizeInBytes;
-        return x + stripeRelativeOffset + this->getPhysicalDriveOffset();
-    }
-
     return (currentStripeRow * this->stripeSizeInBytes) + stripeRelativeOffset + this->getPhysicalDriveOffset();
 }
 
 u_int32_t SmartArrayRaid5Reader::lastRowStripeSize()
 {
-    u_int64_t wholeStripesOnDrive = (this->singleDriveSize - this->getPhysicalDriveOffset()) / this->stripeSizeInBytes;
-    return (this->singleDriveSize - this->getPhysicalDriveOffset()) - wholeStripesOnDrive * this->stripeSizeInBytes;
+    u_int32_t fullStripeSize = this->stripeSizeInBytes * (this->drives.size() - 1);
+    u_int64_t wholeStripesOnDrive = this->driveSize() / fullStripeSize;
+    u_int32_t lastFullStripeSize = this->driveSize() - wholeStripesOnDrive * fullStripeSize;
+    return lastFullStripeSize / (this->drives.size() - 1);
 }
 
 bool SmartArrayRaid5Reader::isLastRow(u_int64_t rownum)
 {
-    u_int64_t wholeStripesOnDrive = (this->singleDriveSize - this->getPhysicalDriveOffset()) / this->stripeSizeInBytes;
+    u_int32_t fullStripeSize = this->stripeSizeInBytes * (this->drives.size() - 1);
+    u_int64_t wholeStripesOnDrive = this->driveSize() / fullStripeSize;
     return rownum == wholeStripesOnDrive;
 }
 

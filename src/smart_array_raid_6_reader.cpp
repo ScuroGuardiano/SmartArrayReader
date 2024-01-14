@@ -92,12 +92,25 @@ int SmartArrayRaid6Reader::read(void *buf, u_int32_t len, u_int64_t offset)
 
 u_int64_t SmartArrayRaid6Reader::stripeNumber(u_int64_t offset)
 {
-    return offset / this->stripeSizeInBytes;
+    u_int64_t stripenum = offset / this->stripeSizeInBytes;
+    if (this->isLastRow(stripenum / (drives.size() - 2)))
+    {
+        u_int64_t o = offset - (stripenum * this->stripeSizeInBytes);
+        u_int64_t lastStripeNum = o / this->lastRowStripeSize();
+        stripenum += lastStripeNum;
+    }
+
+    return stripenum;
 }
 
 u_int32_t SmartArrayRaid6Reader::stripeRelativeOffset(u_int64_t stripenum, u_int64_t offset)
 {
-    return offset - stripenum * this->stripeSizeInBytes;
+    u_int32_t o = offset - stripenum * this->stripeSizeInBytes;;
+    if (this->isLastRow(stripenum / (drives.size() - 2)))
+    {
+        o %= this->lastRowStripeSize();
+    }
+    return o;
 }
 
 u_int16_t SmartArrayRaid6Reader::stripeDriveNumber(u_int64_t stripenum)
@@ -126,25 +139,21 @@ u_int16_t SmartArrayRaid6Reader::stripeDriveNumber(u_int64_t stripenum)
 u_int64_t SmartArrayRaid6Reader::stripeDriveOffset(u_int64_t stripenum, u_int32_t stripeRelativeOffset)
 {
     u_int64_t currentStripeRow = stripenum / (drives.size() - 2);
-
-    if (this->isLastRow(currentStripeRow))
-    {
-        u_int64_t x = (currentStripeRow - 1) * this->stripeSizeInBytes;
-        return x + stripeRelativeOffset + this->getPhysicalDriveOffset();
-    }
-
     return (currentStripeRow * this->stripeSizeInBytes) + stripeRelativeOffset + this->getPhysicalDriveOffset();
 }
 
 u_int32_t SmartArrayRaid6Reader::lastRowStripeSize()
 {
-    u_int64_t wholeStripesOnDrive = (this->singleDriveSize - this->getPhysicalDriveOffset()) / this->stripeSizeInBytes;
-    return (this->singleDriveSize - this->getPhysicalDriveOffset()) - wholeStripesOnDrive * this->stripeSizeInBytes;
+    u_int32_t fullStripeSize = this->stripeSizeInBytes * (this->drives.size() - 2);
+    u_int64_t wholeStripesOnDrive = this->driveSize() / fullStripeSize;
+    u_int32_t lastFullStripeSize = this->driveSize() - wholeStripesOnDrive * fullStripeSize;
+    return lastFullStripeSize / (this->drives.size() - 2);
 }
 
 bool SmartArrayRaid6Reader::isLastRow(u_int64_t rownum)
 {
-    u_int64_t wholeStripesOnDrive = (this->singleDriveSize - this->getPhysicalDriveOffset()) / this->stripeSizeInBytes;
+    u_int32_t fullStripeSize = this->stripeSizeInBytes * (this->drives.size() - 2);
+    u_int64_t wholeStripesOnDrive = this->driveSize() / fullStripeSize;
     return rownum == wholeStripesOnDrive;
 }
 
