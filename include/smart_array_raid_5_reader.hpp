@@ -15,8 +15,8 @@ struct SmartArrayRaid5ReaderOptions
     /// @brief drives path
     std::vector<std::shared_ptr<DriveReader>> driveReaders;
     std::string readerName;
-    u_int64_t size;
-    u_int64_t offset;
+    u_int64_t size = 0;
+    u_int64_t offset = 0;
 };
 
 class SmartArrayRaid5Reader : public SmartArrayReaderBase
@@ -36,6 +36,8 @@ private:
     u_int32_t stripeRelativeOffset(u_int64_t stripenum, u_int64_t offset);
     u_int16_t stripeDriveNumber(u_int64_t stripenum);
     u_int64_t stripeDriveOffset(u_int64_t stripenum, u_int32_t stripeRelativeOffset);
+    u_int32_t lastRowStripeSize();
+    bool isLastRow(u_int64_t rownum);
     u_int32_t readFromStripe(void* buf, u_int64_t stripenum, u_int32_t stripeRelativeOffset, u_int32_t len);
     u_int32_t recoverForDrive(void* buf, u_int16_t drivenum, u_int64_t driveOffset, u_int32_t len);
 };

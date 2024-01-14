@@ -1,4 +1,5 @@
 #include "smart_array_raid_50_reader.hpp"
+#include <iostream>
 
 SmartArrayRaid50Reader::SmartArrayRaid50Reader(SmartArrayRaid50ReaderOptions &options)
 {
@@ -44,7 +45,7 @@ SmartArrayRaid50Reader::SmartArrayRaid50Reader(SmartArrayRaid50ReaderOptions &op
             parityOptions.readerName.erase(parityOptions.readerName.end() - 1);
             parityOptions.stripeSize = options.stripeSize;
             parityOptions.parityDelay = options.parityDelay;
-            parityOptions.size = options.size / (options.driveReaders.size() / options.parityGroups);
+            parityOptions.size = options.size / options.parityGroups;
             parityOptions.offset = options.offset;
 
             parityGroupsReaders.push_back(
@@ -63,7 +64,8 @@ SmartArrayRaid50Reader::SmartArrayRaid50Reader(SmartArrayRaid50ReaderOptions &op
         // Offset is zero here, because in raid 50 raid 0 is not
         // "touching" physical drives direcly but rather thru
         // raid 5 readers
-        .offset = 0
+        .offset = 0,
+        .nometadata = true
     };
 
     this->raid0Reader = std::make_unique<SmartArrayRaid0Reader>(reader0Options);

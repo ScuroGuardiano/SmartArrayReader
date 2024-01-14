@@ -15,8 +15,8 @@ struct SmartArrayRaid10ReaderOptions
     /// @brief drives path
     std::vector<std::shared_ptr<DriveReader>> driveReaders;
     std::string readerName;
-    u_int64_t size;
-    u_int64_t offset;
+    u_int64_t size = 0;
+    u_int64_t offset = 0;
 };
 
 class SmartArrayRaid10Reader : public SmartArrayReaderBase

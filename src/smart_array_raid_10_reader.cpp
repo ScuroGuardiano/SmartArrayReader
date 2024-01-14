@@ -58,7 +58,8 @@ SmartArrayRaid10Reader::SmartArrayRaid10Reader(SmartArrayRaid10ReaderOptions &op
         // Offset is zero here, because in raid 10 raid 0 is not
         // "touching" physical drives direcly but rather thru
         // raid 1 readers
-        .offset = 0
+        .offset = 0,
+        .nometadata = true
     };
 
     this->raid0Reader = std::make_unique<SmartArrayRaid0Reader>(reader0Options);

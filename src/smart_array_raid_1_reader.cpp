@@ -45,7 +45,9 @@ int SmartArrayRaid1Reader::read(void *buf, u_int32_t len, u_int64_t offset)
 {
     if (offset >= this->driveSize())
     {
-        std::cerr << "Tried to read from offset exceeding array size. Skipping." << std::endl;
+        std::cerr << this->name() << ": Tried to read from offset exceeding array size. Skipping." << std::endl;
+        std::cerr << "Offset: " << offset << std::endl;
+        std::cerr << "Drive Size: " << this->driveSize() << std::endl;
         return -1;
     }
 

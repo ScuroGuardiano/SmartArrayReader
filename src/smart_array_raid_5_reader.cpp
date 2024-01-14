@@ -52,6 +52,7 @@ SmartArrayRaid5Reader::SmartArrayRaid5Reader(SmartArrayRaid5ReaderOptions &optio
 
     if (options.size > 0)
     {
+        std::cout << "5 SET SIZE" << std::endl;
         this->setSize(options.size, maximumSize);
     }
 }
@@ -60,7 +61,9 @@ int SmartArrayRaid5Reader::read(void *buf, u_int32_t len, u_int64_t offset)
 {
     if (offset >= this->driveSize())
     {
-        std::cerr << "Tried to read from offset exceeding array size. Skipping." << std::endl;
+        std::cerr << this->name() << ": Tried to read from offset exceeding array size. Skipping." << std::endl;
+        std::cerr << "Offset: " << offset << std::endl;
+        std::cerr << "Drive Size: " << this->driveSize() << std::endl;
         return -1;
     }
 
@@ -120,7 +123,25 @@ u_int64_t SmartArrayRaid5Reader::stripeDriveOffset(u_int64_t stripenum, u_int32_
 {
     u_int64_t currentStripeRow = stripenum / (drives.size() - 1);
 
+    if (this->isLastRow(currentStripeRow))
+    {
+        u_int64_t x = (currentStripeRow - 1) * this->stripeSizeInBytes;
+        return x + stripeRelativeOffset + this->getPhysicalDriveOffset();
+    }
+
     return (currentStripeRow * this->stripeSizeInBytes) + stripeRelativeOffset + this->getPhysicalDriveOffset();
+}
+
+u_int32_t SmartArrayRaid5Reader::lastRowStripeSize()
+{
+    u_int64_t wholeStripesOnDrive = (this->singleDriveSize - this->getPhysicalDriveOffset()) / this->stripeSizeInBytes;
+    return (this->singleDriveSize - this->getPhysicalDriveOffset()) - wholeStripesOnDrive * this->stripeSizeInBytes;
+}
+
+bool SmartArrayRaid5Reader::isLastRow(u_int64_t rownum)
+{
+    u_int64_t wholeStripesOnDrive = (this->singleDriveSize - this->getPhysicalDriveOffset()) / this->stripeSizeInBytes;
+    return rownum == wholeStripesOnDrive;
 }
 
 u_int32_t SmartArrayRaid5Reader::readFromStripe(void *buf, u_int64_t stripenum, u_int32_t stripeRelativeOffset, u_int32_t len)
