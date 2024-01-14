@@ -156,6 +156,7 @@ u_int32_t SmartArrayRaid5Reader::readFromStripe(void *buf, u_int64_t stripenum, 
 {
     auto drivenum = stripeDriveNumber(stripenum);
     auto driveOffset = stripeDriveOffset(stripenum, stripeRelativeOffset);
+    auto stripeSize = this->stripeSizeInBytes;
 
     #ifdef LOGGING_ENABLED
     std::cout << "------ STRIPE ------" << std::endl;
@@ -166,13 +167,18 @@ u_int32_t SmartArrayRaid5Reader::readFromStripe(void *buf, u_int64_t stripenum, 
     std::cout << "Len:        " << len << std::endl;
     #endif
 
-    if ((len + stripeRelativeOffset) > this->stripeSizeInBytes)
+    if (this->isLastRow(stripenum / (drives.size() - 1)))
+    {
+        stripeSize = this->lastRowStripeSize();
+    }
+
+    if ((len + stripeRelativeOffset) > stripeSize)
     {
         // We will to the end of the stripe if
         // stripe area is exceed. We will return len
         // from this method so called will know that
         // some data must be read from another stripe
-        len = this->stripeSizeInBytes - stripeRelativeOffset;
+        len = stripeSize - stripeRelativeOffset;
     }
 
     auto& drivePtr = this->drives[drivenum];

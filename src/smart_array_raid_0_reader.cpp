@@ -58,7 +58,7 @@ int SmartArrayRaid0Reader::read(void* buf, u_int32_t len, u_int64_t offset)
     }
 
     u_int64_t stripenum = this->stripeNumber(offset);
-    u_int32_t stripeRelativeOffset = this->stripeRelativeOffset(stripenum, offset);
+    u_int32_t stripeRelativeOffset = this->stripeRelativeOffset(stripenum, offset);  
 
     while (len != 0)
     {
@@ -129,14 +129,20 @@ u_int32_t SmartArrayRaid0Reader::readFromStripe(void *buf, u_int64_t stripenum, 
 {
     auto drivenum = stripeDriveNumber(stripenum);
     auto driveOffset = stripeDriveOffset(stripenum, stripeRelativeOffset);
-    
-    if ((len + stripeRelativeOffset) > this->stripeSizeInBytes)
+    auto stripeSize = this->stripeSizeInBytes;
+
+    if (this->isLastRow(stripenum / drives.size()))
+    {
+        stripeSize = this->lastRowStripeSize();
+    }
+
+    if ((len + stripeRelativeOffset) > stripeSize)
     {
         // We will to the end of the stripe if
         // stripe area is exceed. We will return len
         // from this method so called will know that
         // some data must be read from another stripe
-        len = this->stripeSizeInBytes - stripeRelativeOffset;
+        len = stripeSize - stripeRelativeOffset;
     }
 
     auto& drivePtr = this->drives[drivenum];
