@@ -4,18 +4,20 @@
 
 namespace sg
 {
-
+    
+// I am using u16 instead of u8, so std::cout will treat it as a number and not char.
 struct PhysicalDrive
 {
     std::string serialNumber;
-    u8 boxNumber;
-    u8 bayNumber;
+    u16 boxNumber;
+    u16 bayNumber;
 };
 
+// I am using u16 instead of u8, so std::cout will treat it as a number and not char.
 struct LogicalDrive
 {
     std::string label;
-    u8 physicalDriveCount;
+    u16 physicalDriveCount;
 
     // RAID 0 = physicalDriveCount
     // RAID 1 = 1
@@ -23,12 +25,12 @@ struct LogicalDrive
     // RAID 6 = physicalDriveCount - 2
     // With RAID 10 it's weird, idk really, for 4 drives it's 2.
     // With RAID 50 and RAID 60 it's drives needed to run for each parity group
-    u8 physicalDrivesNeededToRun;
+    u16 physicalDrivesNeededToRun;
     // Decoded, so: RAID 0 -> 0, RAID 1 -> 1, RAID 10 -> 10 etc.
-    u8 raidLevel;
+    u16 raidLevel;
     // Only for RAID 50 and 60, otherwise it will be 0
-    u8 parityGroups;
-    std::vector<u8> physicalDrives;
+    u16 parityGroups;
+    std::vector<u16> physicalDrives;
     u32 stripeSizeInBytes;
     u64 logicalDriveSizeInBytes;
     u64 offsetOnEachPhysicalDriveInBytes;
@@ -37,7 +39,7 @@ struct LogicalDrive
 
 struct P420Metadata
 {
-    u8 driveNumber;
+    u16 driveNumber;
     std::string controllerSerialNumber;
     std::vector<PhysicalDrive> physicalDrives;
     std::vector<LogicalDrive> logicalDrives;

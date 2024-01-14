@@ -47,7 +47,7 @@ and wait for ages for it to compile.
 - [ ] RAID 60
 - [ ] Better error handling
 - [ ] Code cleanup
-- [ ] Reading metadata from drives with `packard-tell`
+- [x] Reading metadata from drives with `packard-tell`
 - [ ] Writing blogpost about everything that I know about P420 controller
 
 ## Libraries used

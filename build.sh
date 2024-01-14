@@ -4,5 +4,5 @@ if [ ! -f BUSE/libbuse.a ]; then
     cd ..
 fi
 
-g++ hewlett-read.cpp src/*.cpp -o hewlett-read -LBUSE -lbuse -Iinclude -O3 -std=c++23
+g++ hewlett-read.cpp src/drive_reader.cpp src/smart_array*.cpp -o hewlett-read -LBUSE -lbuse -Iinclude -O3 -std=c++23
 g++ packard-tell.cpp src/drive_reader.cpp src/metadata-parser.cpp -o packard-tell -Iinclude -O3 -std=c++23
