@@ -74,11 +74,18 @@ std::string sizeToHuman(u64 size)
     }
 
     std::stringstream ss;
-    ss << std::setprecision(2) << std::fixed << std::showpoint << s << suffixes[i];
+    if (s == static_cast<u32>(s))
+    {
+        ss << static_cast<u32>(s);
+    }
+    else
+    {
+        ss << std::setprecision(2) << std::fixed << s;
+    }
 
+    ss << suffixes[i];
     return ss.str();
 }
-
 
 std::string formatSize(u64 size)
 {
@@ -86,7 +93,7 @@ std::string formatSize(u64 size)
     {
         return std::to_string(size) + "B (" + sizeToHuman(size) + ")";
     }
-    return std::to_string(size);
+    return std::to_string(size) + "B";
 }
 
 std::string join(std::vector<std::string> vec, std::string delimiter)
@@ -144,7 +151,11 @@ std::string generateCommandToMount(LogicalDrive& ld, std::vector<DriveNumPair>& 
     }
 
     arguments.push_back("--raid=" + std::to_string(ld.raidLevel));
-    arguments.push_back("--stripe-size=" + std::to_string(ld.stripeSizeInBytes / 1024));
+    
+    if (ld.raidLevel != 1)
+    {
+        arguments.push_back("--stripe-size=" + std::to_string(ld.stripeSizeInBytes / 1024));
+    }
     arguments.push_back("--size=" + std::to_string(ld.logicalDriveSizeInBytes));
     
     if (ld.offsetOnEachPhysicalDriveInBytes > 0)
