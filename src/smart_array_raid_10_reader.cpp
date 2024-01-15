@@ -1,6 +1,9 @@
 #include "smart_array_raid_10_reader.hpp"
 #include <vector>
 
+namespace sg
+{
+
 SmartArrayRaid10Reader::SmartArrayRaid10Reader(const SmartArrayRaid10ReaderOptions &options)
 {
     // From what I've observed my raid controller only supports 2 drives for RAID 1
@@ -62,12 +65,14 @@ SmartArrayRaid10Reader::SmartArrayRaid10Reader(const SmartArrayRaid10ReaderOptio
     this->raid0Reader = std::make_unique<SmartArrayRaid0Reader>(reader0Options);
 }
 
-int SmartArrayRaid10Reader::read(void *buf, u_int32_t len, u_int64_t offset)
+int SmartArrayRaid10Reader::read(void *buf, u32 len, u64 offset)
 {
     return this->raid0Reader->read(buf, len, offset);
 }
 
-u_int64_t SmartArrayRaid10Reader::driveSize()
+u64 SmartArrayRaid10Reader::driveSize()
 {
     return this->raid0Reader->driveSize();
 }
+
+} // end namespace sg

@@ -1,6 +1,9 @@
 #include "smart_array_reader_base.hpp"
 
-void SmartArrayReaderBase::setSize(u_int64_t size, u_int64_t maximumSize)
+namespace sg
+{
+
+void SmartArrayReaderBase::setSize(u64 size, u64 maximumSize)
 {
     if (size > maximumSize && maximumSize != 0)
     {
@@ -11,12 +14,12 @@ void SmartArrayReaderBase::setSize(u_int64_t size, u_int64_t maximumSize)
     this->size = size;
 }
 
-u_int64_t SmartArrayReaderBase::driveSize()
+u64 SmartArrayReaderBase::driveSize()
 {
     return this->size;
 }
 
-void SmartArrayReaderBase::setPhysicalDriveOffset(u_int64_t offset)
+void SmartArrayReaderBase::setPhysicalDriveOffset(u64 offset)
 {
     if (offset >= this->singleDriveSize)
     {
@@ -28,7 +31,9 @@ void SmartArrayReaderBase::setPhysicalDriveOffset(u_int64_t offset)
     this->physicalDriveOffset = offset;
 }
 
-u_int64_t SmartArrayReaderBase::getPhysicalDriveOffset()
+u64 SmartArrayReaderBase::getPhysicalDriveOffset()
 {
     return this->physicalDriveOffset;
 }
+
+} // end namespace sg

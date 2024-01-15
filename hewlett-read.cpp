@@ -14,24 +14,34 @@
 #include "smart_array_raid_50_reader.hpp"
 #include "smart_array_raid_60_reader.hpp"
 
+using namespace sg;
+
 std::unique_ptr<DriveReader> reader;
 
 struct ProgramOptions
 {
     /// @brief Stripe size in kilobytes
-    u_int32_t stripeSize;
-    u_int16_t parityDelay;
-    u_int16_t raidLevel;
-    u_int16_t parityGroups;
-    u_int64_t size;
-    u_int64_t offset;
+    u32 stripeSize;
+    u16 parityDelay;
+    u16 raidLevel;
+    u16 parityGroups;
+    u64 size;
+    u64 offset;
     std::vector<std::string> drives;
     std::string outputDevice;
 };
 
-int read(void *buf, u_int32_t len, u_int64_t offset, void *userdata)
+int read(void *buf, u32 len, u64 offset, void *userdata)
 {
-    return reader->read(buf, len, offset);
+    try 
+    {
+        return reader->read(buf, len, offset);
+    }
+    catch (std::runtime_error& ex)
+    {
+        std::cerr << "Runtime error occured while reading data: " << ex.what() << std::endl;
+        return -1;
+    }
 }
 
 // Argument parsing
@@ -47,7 +57,7 @@ static argp_option options[] = {
     {0}
 };
 
-u_int16_t argToU16(std::string arg, std::string argName)
+u16 argToU16(std::string arg, std::string argName)
 {
     try 
     {
@@ -68,7 +78,7 @@ u_int16_t argToU16(std::string arg, std::string argName)
     }
 }
 
-u_int32_t argToU32(std::string arg, std::string argName)
+u32 argToU32(std::string arg, std::string argName)
 {
     try 
     {
@@ -84,7 +94,7 @@ u_int32_t argToU32(std::string arg, std::string argName)
     }
 }
 
-u_int64_t argToU64(std::string arg, std::string argName)
+u64 argToU64(std::string arg, std::string argName)
 {
     try 
     {

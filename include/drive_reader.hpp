@@ -1,14 +1,17 @@
 #pragma once
 
-#include <sys/types.h>
+#include "types.hpp"
 #include <string>
 #include <fstream>
+
+namespace sg
+{
 
 class DriveReader
 {
 public:
-    virtual int read(void* buf, u_int32_t len, u_int64_t offset) = 0;
-    virtual u_int64_t driveSize() = 0;
+    virtual int read(void* buf, u32 len, u64 offset) = 0;
+    virtual u64 driveSize() = 0;
     virtual inline ~DriveReader() {};
     virtual std::string name();
 
@@ -20,12 +23,14 @@ class BlockDeviceReader : public DriveReader
 {
 public:
     BlockDeviceReader(std::string path);
-    int read(void* buf, u_int32_t len, u_int64_t offset) override;
-    u_int64_t driveSize() override;
+    int read(void* buf, u32 len, u64 offset) override;
+    u64 driveSize() override;
 
 private:
     std::string path;
     std::ifstream devstream;
-    u_int64_t size;
-    u_int64_t readDriveSize(std::string path);
+    u64 size;
+    u64 readDriveSize(std::string path);
 };
+
+} // end namespace sg

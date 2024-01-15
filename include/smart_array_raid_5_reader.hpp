@@ -1,43 +1,48 @@
 #pragma once
 
-#include <sys/types.h>
 #include <vector>
 #include <memory>
 #include "smart_array_reader_base.hpp"
+#include "types.hpp"
+
+namespace sg
+{
 
 struct SmartArrayRaid5ReaderOptions
 {
 
     /// @brief stripe size in kilobytes.
-    u_int32_t stripeSize;
-    u_int16_t parityDelay;
+    u32 stripeSize;
+    u16 parityDelay;
 
     /// @brief drives path
     std::vector<std::shared_ptr<DriveReader>> driveReaders;
     std::string readerName;
-    u_int64_t size = 0;
-    u_int64_t offset = 0;
+    u64 size = 0;
+    u64 offset = 0;
 };
 
 class SmartArrayRaid5Reader : public SmartArrayReaderBase
 {
 public:
     SmartArrayRaid5Reader(const SmartArrayRaid5ReaderOptions& options);
-    int read(void *buf, u_int32_t len, u_int64_t offset) override;
+    int read(void *buf, u32 len, u64 offset) override;
 
 private:
-    u_int32_t stripeSizeInBytes;
-    u_int16_t parityDelay;
+    u32 stripeSizeInBytes;
+    u16 parityDelay;
 
     std::vector<std::shared_ptr<DriveReader>> drives;
 
     // Stripes will be index from 0.
-    u_int64_t stripeNumber(u_int64_t offset);
-    u_int32_t stripeRelativeOffset(u_int64_t stripenum, u_int64_t offset);
-    u_int16_t stripeDriveNumber(u_int64_t stripenum);
-    u_int64_t stripeDriveOffset(u_int64_t stripenum, u_int32_t stripeRelativeOffset);
-    u_int32_t lastRowStripeSize();
-    bool isLastRow(u_int64_t rownum);
-    u_int32_t readFromStripe(void* buf, u_int64_t stripenum, u_int32_t stripeRelativeOffset, u_int32_t len);
-    u_int32_t recoverForDrive(void* buf, u_int16_t drivenum, u_int64_t driveOffset, u_int32_t len);
+    u64 stripeNumber(u64 offset);
+    u32 stripeRelativeOffset(u64 stripenum, u64 offset);
+    u16 stripeDriveNumber(u64 stripenum);
+    u64 stripeDriveOffset(u64 stripenum, u32 stripeRelativeOffset);
+    u32 lastRowStripeSize();
+    bool isLastRow(u64 rownum);
+    u32 readFromStripe(void* buf, u64 stripenum, u32 stripeRelativeOffset, u32 len);
+    u32 recoverForDrive(void* buf, u16 drivenum, u64 driveOffset, u32 len);
 };
+
+} // end namespace sg

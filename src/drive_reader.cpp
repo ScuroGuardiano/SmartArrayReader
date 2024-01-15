@@ -1,13 +1,15 @@
 #include "drive_reader.hpp"
 #include <sstream>
 #include <sys/ioctl.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <linux/fs.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+
+namespace sg
+{
 
 std::string DriveReader::name()
 {
@@ -36,7 +38,7 @@ BlockDeviceReader::BlockDeviceReader(std::string path)
     }
 }
 
-int BlockDeviceReader::read(void *buf, u_int32_t len, u_int64_t offset)
+int BlockDeviceReader::read(void *buf, u32 len, u64 offset)
 {
     this->devstream.seekg(offset);
     this->devstream.read((char*)buf, len);
@@ -58,12 +60,12 @@ int BlockDeviceReader::read(void *buf, u_int32_t len, u_int64_t offset)
     return 0;
 }
 
-u_int64_t BlockDeviceReader::driveSize()
+u64 BlockDeviceReader::driveSize()
 {
     return this->size;
 }
 
-u_int64_t BlockDeviceReader::readDriveSize(std::string path)
+u64 BlockDeviceReader::readDriveSize(std::string path)
 {
     int fd = open(path.c_str(), O_RDONLY);
 
@@ -93,3 +95,5 @@ u_int64_t BlockDeviceReader::readDriveSize(std::string path)
 
     return driveSize;
 }
+
+} // end namespace sg

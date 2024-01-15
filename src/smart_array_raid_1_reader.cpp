@@ -4,10 +4,13 @@
 #include <iostream>
 #include <memory>
 
+namespace sg
+{
+
 SmartArrayRaid1Reader::SmartArrayRaid1Reader(const SmartArrayRaid1ReaderOptions& options)
 {
     this->driveName = options.readerName;
-    std::vector<u_int64_t> drivesSizes;
+    std::vector<u64> drivesSizes;
     int missingDrives = 0;
 
     for (auto& drive : options.driveReaders)
@@ -32,7 +35,7 @@ SmartArrayRaid1Reader::SmartArrayRaid1Reader(const SmartArrayRaid1ReaderOptions&
     this->singleDriveSize -= 1024 * 1024 * 32;
     this->setPhysicalDriveOffset(options.offset);
 
-    u_int64_t maximumSize = this->singleDriveSize - this->getPhysicalDriveOffset();
+    u64 maximumSize = this->singleDriveSize - this->getPhysicalDriveOffset();
     this->setSize(maximumSize, 0);
 
     if (options.size > 0)
@@ -41,7 +44,7 @@ SmartArrayRaid1Reader::SmartArrayRaid1Reader(const SmartArrayRaid1ReaderOptions&
     }
 }
 
-int SmartArrayRaid1Reader::read(void *buf, u_int32_t len, u_int64_t offset)
+int SmartArrayRaid1Reader::read(void *buf, u32 len, u64 offset)
 {
     if (offset >= this->driveSize())
     {
@@ -72,3 +75,5 @@ int SmartArrayRaid1Reader::read(void *buf, u_int32_t len, u_int64_t offset)
 
     return -1;
 }
+
+} // end namespace sg

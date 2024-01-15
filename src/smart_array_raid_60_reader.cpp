@@ -1,5 +1,8 @@
 #include "smart_array_raid_60_reader.hpp"
 
+namespace sg
+{
+
 SmartArrayRaid60Reader::SmartArrayRaid60Reader(const SmartArrayRaid60ReaderOptions &options)
 {
     if (options.driveReaders.size() < 6)
@@ -7,7 +10,7 @@ SmartArrayRaid60Reader::SmartArrayRaid60Reader(const SmartArrayRaid60ReaderOptio
         throw std::invalid_argument("For RAID 60 at least 8 drives must be provided (two for each parity group can be missing but still they have to be in the driveReaders list represented with nullptr)");
     }
 
-    u_int16_t drivesPerParityGroup = options.driveReaders.size() / options.parityGroups;
+    u16 drivesPerParityGroup = options.driveReaders.size() / options.parityGroups;
     
     if (drivesPerParityGroup < 4)
     {
@@ -70,12 +73,14 @@ SmartArrayRaid60Reader::SmartArrayRaid60Reader(const SmartArrayRaid60ReaderOptio
     this->raid0Reader = std::make_unique<SmartArrayRaid0Reader>(reader0Options);
 }
 
-int SmartArrayRaid60Reader::read(void *buf, u_int32_t len, u_int64_t offset)
+int SmartArrayRaid60Reader::read(void *buf, u32 len, u64 offset)
 {
     return this->raid0Reader->read(buf, len, offset);
 }
 
-u_int64_t SmartArrayRaid60Reader::driveSize()
+u64 SmartArrayRaid60Reader::driveSize()
 {
     return this->raid0Reader->driveSize();
 }
+
+} // end namespace sg

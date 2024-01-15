@@ -45,13 +45,13 @@ and wait for ages for it to compile.
 - [x] RAID 10
 - [x] RAID 50
 - [x] RAID 60
-- [ ] Better error handling
-- [ ] Code cleanup
+- [x] Better error handling
+- [x] Code cleanup
 - [x] Reading metadata from drives with `packard-tell`
 - [ ] Writing blogpost about everything that I know about P420 controller
 
 ## Libraries used
-[BUSE](https://github.com/acozzette/BUSE) - :love:
+[BUSE](https://github.com/acozzette/BUSE) - :purple_heart:
 
 ## Legal
 This Project is in no way affiliated with, authorized, maintained, sponsored or endorsed by HP or Hewlett Packard Enterprise or any of its affiliates or subsidiaries.

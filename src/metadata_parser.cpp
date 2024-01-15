@@ -2,12 +2,14 @@
 #include <bit>
 
 #include "types.hpp"
-#include "metadata-parser.hpp"
+#include "metadata_parser.hpp"
 
-#pragma pack(1)
 
 namespace sg
 {
+
+#pragma pack(1)
+
 // 28 bytes per drive, starting from 0x4100
 struct RawPhysicalDrive
 {
